@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sciglob"
+version = "0.1.0"
+description = "Python library for controlling scientific instrumentation: Sensor Heads, Filter Wheels, and Oriental Motors"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "SciGlob Team"}
+]
+keywords = [
+    "scientific-instrumentation",
+    "sensor-head",
+    "filter-wheel",
+    "oriental-motors",
+    "motor-control",
+    "azimuth",
+    "zenith",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: System :: Hardware",
+]
+
+dependencies = [
+    "pyserial>=3.5",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/SciGlob/SciGlob-Library"
+Documentation = "https://github.com/SciGlob/SciGlob-Library#readme"
+Repository = "https://github.com/SciGlob/SciGlob-Library"
+Issues = "https://github.com/SciGlob/SciGlob-Library/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sciglob*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "D", "UP", "B", "C4"]
+ignore = ["D100", "D104"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=sciglob --cov-report=term-missing"
+

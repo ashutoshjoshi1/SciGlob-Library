@@ -1,0 +1,56 @@
+# SciGlob Default Configuration
+# Copy this file and customize for your setup
+
+sensor_head:
+  port: "/dev/ttyUSB0"  # Update for your system (COM3 on Windows)
+  baudrate: 9600
+  timeout: 1.0
+  
+  filter_wheel:
+    num_positions: 6
+    home_position: 1
+    filters:
+      - position: 1
+        name: "UV_340nm"
+        wavelength: 340
+        bandwidth: 10
+      - position: 2
+        name: "Blue_450nm"
+        wavelength: 450
+        bandwidth: 40
+      - position: 3
+        name: "Green_520nm"
+        wavelength: 520
+        bandwidth: 40
+      - position: 4
+        name: "Red_630nm"
+        wavelength: 630
+        bandwidth: 40
+      - position: 5
+        name: "NIR_850nm"
+        wavelength: 850
+        bandwidth: 40
+      - position: 6
+        name: "Open"
+
+motors:
+  azimuth:
+    port: "/dev/ttyUSB1"  # Update for your system
+    baudrate: 115200
+    timeout: 2.0
+    min_position: 0.0
+    max_position: 360.0
+    home_position: 0.0
+    steps_per_degree: 100.0
+    slave_id: 1
+    
+  zenith:
+    port: "/dev/ttyUSB2"  # Update for your system
+    baudrate: 115200
+    timeout: 2.0
+    min_position: 0.0
+    max_position: 90.0
+    home_position: 0.0
+    steps_per_degree: 100.0
+    slave_id: 2
+

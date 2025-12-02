@@ -1,0 +1,33 @@
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Include configuration
+include sciglob/config/*.yaml
+
+# Include type hints marker
+include sciglob/py.typed
+
+# Include tests (for sdist)
+recursive-include tests *.py
+
+# Include documentation
+recursive-include docs *.md
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude .git*
+global-exclude *.egg-info
+prune htmlcov
+prune .pytest_cache
+prune .mypy_cache
+prune .tox
+prune .eggs
+prune build
+prune dist
+

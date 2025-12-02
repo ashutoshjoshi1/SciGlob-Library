@@ -5,35 +5,49 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sciglob"
 version = "0.1.0"
-description = "Python library for controlling scientific instrumentation: Sensor Heads, Filter Wheels, and Oriental Motors"
+description = "Python library for controlling SciGlob scientific instrumentation: Head Sensors, Trackers, Filter Wheels, and more"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-    {name = "SciGlob Team"}
+    {name = "SciGlob Team", email = "support@sciglob.com"}
+]
+maintainers = [
+    {name = "SciGlob Team", email = "support@sciglob.com"}
 ]
 keywords = [
     "scientific-instrumentation",
     "sensor-head",
     "filter-wheel",
-    "oriental-motors",
+    "tracker",
     "motor-control",
     "azimuth",
     "zenith",
+    "atmospheric-monitoring",
+    "spectrometer",
+    "serial-communication",
+    "hardware-control",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: System :: Hardware",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+    "Typing :: Typed",
 ]
 
 dependencies = [
@@ -45,43 +59,124 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-mock>=3.10",
     "black>=23.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
+    "isort>=5.12",
+    "pre-commit>=3.0",
+    "build>=1.0",
+    "twine>=4.0",
 ]
 docs = [
     "mkdocs>=1.5",
     "mkdocs-material>=9.0",
     "mkdocstrings[python]>=0.24",
 ]
+all = [
+    "sciglob[dev,docs]",
+]
 
 [project.urls]
 Homepage = "https://github.com/SciGlob/SciGlob-Library"
-Documentation = "https://github.com/SciGlob/SciGlob-Library#readme"
-Repository = "https://github.com/SciGlob/SciGlob-Library"
+Documentation = "https://github.com/SciGlob/SciGlob-Library/blob/main/docs/API_REFERENCE.md"
+Repository = "https://github.com/SciGlob/SciGlob-Library.git"
 Issues = "https://github.com/SciGlob/SciGlob-Library/issues"
+Changelog = "https://github.com/SciGlob/SciGlob-Library/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sciglob*"]
+exclude = ["tests*", "docs*", "examples*"]
+
+[tool.setuptools.package-data]
+sciglob = ["config/*.yaml", "py.typed"]
 
 [tool.black]
 line-length = 100
 target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
 
 [tool.ruff]
 line-length = 100
-select = ["E", "F", "W", "I", "N", "D", "UP", "B", "C4"]
-ignore = ["D100", "D104"]
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
 
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+disallow_untyped_defs = false
+check_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --cov=sciglob --cov-report=term-missing"
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--cov=sciglob",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml:coverage.xml",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
 
+[tool.coverage.run]
+source = ["sciglob"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

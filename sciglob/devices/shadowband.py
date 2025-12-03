@@ -6,12 +6,13 @@ from sciglob.core.protocols import SHADOWBAND_COMMANDS, get_error_message
 from sciglob.core.exceptions import DeviceError
 from sciglob.core.connection import parse_response
 from sciglob.core.utils import shadowband_angle_to_position, position_to_shadowband_angle
+from sciglob.core.help_mixin import HelpMixin
 
 if TYPE_CHECKING:
     from sciglob.devices.head_sensor import HeadSensor
 
 
-class Shadowband:
+class Shadowband(HelpMixin):
     """
     Shadowband controller interface.
     
@@ -28,7 +29,23 @@ class Shadowband:
         ...     sb.move_to_position(500)
         ...     sb.move_to_angle(45.0)
         ...     sb.reset()
+        
+    Help:
+        >>> sb.help()              # Show full help
     """
+    
+    # HelpMixin properties
+    _device_name = "Shadowband"
+    _device_description = "Shadowband arm position controller"
+    _supported_types = ["SB"]
+    _default_config = {
+        "resolution": "0.36 degrees/step",
+        "ratio": "0.5 (offset/radius)",
+    }
+    _command_reference = {
+        "SBm<pos>": "Move to step position",
+        "SBr": "Reset shadowband to home",
+    }
 
     def __init__(
         self,

@@ -1,6 +1,6 @@
 # SciGlob Library - API Reference Manual
 
-## Version 0.1.0
+## Version 0.1.4
 
 This document provides a complete API reference for developers using the SciGlob Library.
 
@@ -1738,6 +1738,6 @@ POL0 - POL359   - Polarizer angles (0-359°)
 ---
 
 *Document Version: 1.0*  
-*SciGlob Library Version: 0.1.0*  
+*SciGlob Library Version: 0.1.4*  
 *Last Updated: 2024*
 

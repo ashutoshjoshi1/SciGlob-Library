@@ -7,9 +7,10 @@ from sciglob.core.connection import SerialConnection
 from sciglob.core.protocols import SerialConfig, HDC2080_PROTOCOL, TIMING_CONFIG
 from sciglob.core.exceptions import ConnectionError, DeviceError, SensorError
 from sciglob.core.utils import parse_hdc2080_humidity, parse_hdc2080_temperature
+from sciglob.core.help_mixin import HelpMixin
 
 
-class HumiditySensor(BaseDevice):
+class HumiditySensor(BaseDevice, HelpMixin):
     """
     Humidity Sensor interface for HDC2080EVM.
     
@@ -25,7 +26,25 @@ class HumiditySensor(BaseDevice):
         >>> print(f"Temperature: {hs.get_temperature()}°C")
         >>> print(f"Humidity: {hs.get_humidity()}%")
         >>> hs.disconnect()
+        
+    Help:
+        >>> hs.help()              # Show full help
     """
+    
+    # HelpMixin properties
+    _device_name = "HumiditySensor"
+    _device_description = "HDC2080EVM humidity and temperature sensor"
+    _supported_types = ["HDC2080EVM"]
+    _default_config = {
+        "baudrate": 9600,
+        "data_format": "4-char little-endian hex",
+    }
+    _command_reference = {
+        "?": "Get device ID",
+        "4": "Initialize (stop streaming)",
+        "1": "Read temperature",
+        "2": "Read humidity",
+    }
 
     def __init__(
         self,
@@ -33,6 +52,8 @@ class HumiditySensor(BaseDevice):
         baudrate: int = 9600,
         timeout: float = 1.0,
         name: str = "HumiditySensor",
+        config: Optional['HumiditySensorConfig'] = None,
+        serial_config: Optional[SerialConfig] = None,
     ):
         """
         Initialize the Humidity Sensor.
@@ -42,7 +63,21 @@ class HumiditySensor(BaseDevice):
             baudrate: Communication speed (default 9600)
             timeout: Command timeout
             name: Device name for logging
+            config: HumiditySensorConfig object
+            serial_config: SerialConfig object for port settings
         """
+        # If config object provided, use its values
+        if config is not None:
+            port = config.serial.port or port
+            baudrate = config.serial.baudrate
+            timeout = config.serial.timeout or timeout
+        
+        # If serial_config provided, use its values
+        if serial_config is not None:
+            port = serial_config.port or port
+            baudrate = serial_config.baudrate
+            timeout = serial_config.timeout or timeout
+        
         super().__init__(port=port, baudrate=baudrate, timeout=timeout, name=name)
         self._protocol = HDC2080_PROTOCOL
         self._initialized = False

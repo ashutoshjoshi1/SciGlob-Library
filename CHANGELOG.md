@@ -10,9 +10,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Nothing yet
 
-## [0.1.0] - 2024-01-15
-## [0.1.1] - 2025-11-10
+## [0.1.4] - 2025-12-03
+
+### Added
+- Help system for all device classes (`.help()`, `.list_methods()`, `.list_properties()`)
+- Library-level help functions (`sciglob.help()`, `sciglob.help_config()`)
+- Hardware configuration classes (`SerialConfig`, `HeadSensorConfig`, etc.)
+- YAML configuration load/save support (`HardwareConfig.from_yaml()`, `.to_yaml()`)
+- `config` and `serial_config` parameters for all device constructors
+- Command reference in help output for each device
+
+### Changed
+- All devices now inherit from `HelpMixin` for consistent help functionality
+- Configuration can now be passed via config objects or individual parameters
+
+## [0.1.3] - 2025-12-03
+
+### Changed
+- Updated README with correct GitHub repository URL
+- Fixed author and maintainer information
+
 ## [0.1.2] - 2025-12-03
+
+### Changed
+- Updated author email and GitHub URLs
+
+## [0.1.1] - 2025-12-03
+
+### Changed
+- Fixed PyPI metadata
+
+## [0.1.0] - 2025-12-03
 
 ### Added
 
@@ -99,7 +127,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 0.1.0 | 2024-01-15 | Initial release |
+| 0.1.4 | 2025-12-03 | Added help system and configuration classes |
+| 0.1.3 | 2025-12-03 | Updated README URLs |
+| 0.1.2 | 2025-12-03 | Updated author info |
+| 0.1.1 | 2025-12-03 | Fixed PyPI metadata |
+| 0.1.0 | 2025-12-03 | Initial release |
 
 ---
 

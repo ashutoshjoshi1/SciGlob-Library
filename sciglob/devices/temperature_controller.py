@@ -7,9 +7,10 @@ from sciglob.core.connection import SerialConnection
 from sciglob.core.protocols import SerialConfig, TETECH_PROTOCOL, TIMING_CONFIG
 from sciglob.core.exceptions import ConnectionError, DeviceError, CommunicationError
 from sciglob.core.utils import dec2hex, hex2dec, get_checksum
+from sciglob.core.help_mixin import HelpMixin
 
 
-class TemperatureController(BaseDevice):
+class TemperatureController(BaseDevice, HelpMixin):
     """
     Temperature Controller interface for TETech devices.
     
@@ -26,7 +27,30 @@ class TemperatureController(BaseDevice):
         >>> tc.set_temperature(25.0)
         >>> print(f"Current temp: {tc.get_temperature()}°C")
         >>> tc.disconnect()
+        
+    Help:
+        >>> tc.help()              # Show full help
+        >>> tc.list_methods()      # List all methods
     """
+    
+    # HelpMixin properties
+    _device_name = "TemperatureController"
+    _device_description = "TETech temperature controller interface"
+    _supported_types = ["TETech1 (16-bit)", "TETech2 (32-bit)"]
+    _default_config = {
+        "baudrate": 9600,
+        "conversion_factor": "10 (TETech1) or 100 (TETech2)",
+        "protocol": "Hex with checksum, ends with ^",
+    }
+    _command_reference = {
+        "1c": "Set temperature",
+        "1d": "Set proportional bandwidth",
+        "1e": "Set integral gain",
+        "30/2d": "Enable output",
+        "5065": "Read set temperature",
+        "0161": "Read control sensor temp",
+        "0261": "Read secondary sensor temp",
+    }
 
     def __init__(
         self,
@@ -35,6 +59,8 @@ class TemperatureController(BaseDevice):
         timeout: float = 1.0,
         name: str = "TempController",
         controller_type: str = "TETech1",
+        config: Optional['TemperatureControllerConfig'] = None,
+        serial_config: Optional[SerialConfig] = None,
     ):
         """
         Initialize the Temperature Controller.
@@ -45,7 +71,22 @@ class TemperatureController(BaseDevice):
             timeout: Command timeout
             name: Device name for logging
             controller_type: "TETech1" (16-bit) or "TETech2" (32-bit)
+            config: TemperatureControllerConfig object
+            serial_config: SerialConfig object for port settings
         """
+        # If config object provided, use its values
+        if config is not None:
+            port = config.serial.port or port
+            baudrate = config.serial.baudrate
+            timeout = config.serial.timeout or timeout
+            controller_type = config.controller_type
+        
+        # If serial_config provided, use its values
+        if serial_config is not None:
+            port = serial_config.port or port
+            baudrate = serial_config.baudrate
+            timeout = serial_config.timeout or timeout
+        
         super().__init__(port=port, baudrate=baudrate, timeout=timeout, name=name)
         
         if controller_type not in ("TETech1", "TETech2"):

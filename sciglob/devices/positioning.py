@@ -8,9 +8,10 @@ from sciglob.core.connection import SerialConnection
 from sciglob.core.protocols import SerialConfig, GPS_PROTOCOL, TIMING_CONFIG
 from sciglob.core.exceptions import ConnectionError, DeviceError
 from sciglob.core.utils import nmea_to_decimal
+from sciglob.core.help_mixin import HelpMixin
 
 
-class PositioningSystem(BaseDevice, ABC):
+class PositioningSystem(BaseDevice, ABC, HelpMixin):
     """
     Abstract base class for GPS/positioning systems.
     
@@ -18,6 +19,14 @@ class PositioningSystem(BaseDevice, ABC):
     - GlobalSat: Simple GPS receiver
     - Novatel: GPS + Gyroscope for orientation sensing
     """
+    
+    # HelpMixin properties
+    _device_name = "PositioningSystem"
+    _device_description = "GPS/Positioning system base class"
+    _supported_types = ["GlobalSat", "Novatel"]
+    _default_config = {
+        "baudrate": 9600,
+    }
 
     @abstractmethod
     def get_position(self) -> Dict[str, Any]:
@@ -47,7 +56,23 @@ class GlobalSatGPS(PositioningSystem):
         >>> position = gps.get_position()
         >>> print(f"Lat: {position['latitude']}, Lon: {position['longitude']}")
         >>> gps.disconnect()
+        
+    Help:
+        >>> gps.help()              # Show full help
     """
+    
+    # HelpMixin properties
+    _device_name = "GlobalSatGPS"
+    _device_description = "GlobalSat GPS receiver (NMEA GPGGA protocol)"
+    _supported_types = ["GlobalSat"]
+    _default_config = {
+        "baudrate": 9600,
+        "protocol": "NMEA 0183",
+        "message_type": "GPGGA",
+    }
+    _command_reference = {
+        "GPGGA": "Position fix data (lat, lon, alt, quality, satellites)",
+    }
 
     def __init__(
         self,
@@ -55,6 +80,8 @@ class GlobalSatGPS(PositioningSystem):
         baudrate: int = 9600,
         timeout: float = 2.0,
         name: str = "GlobalSatGPS",
+        config: Optional['GPSConfig'] = None,
+        serial_config: Optional[SerialConfig] = None,
     ):
         """
         Initialize the GlobalSat GPS.
@@ -64,7 +91,21 @@ class GlobalSatGPS(PositioningSystem):
             baudrate: Communication speed (default 9600)
             timeout: Command timeout
             name: Device name for logging
+            config: GPSConfig object
+            serial_config: SerialConfig object for port settings
         """
+        # If config object provided, use its values
+        if config is not None:
+            port = config.serial.port or port
+            baudrate = config.serial.baudrate
+            timeout = config.serial.timeout or timeout
+        
+        # If serial_config provided, use its values
+        if serial_config is not None:
+            port = serial_config.port or port
+            baudrate = serial_config.baudrate
+            timeout = serial_config.timeout or timeout
+        
         super().__init__(port=port, baudrate=baudrate, timeout=timeout, name=name)
         self._protocol = GPS_PROTOCOL["GlobalSat"]
         self._configured = False
@@ -273,7 +314,24 @@ class NovatelGPS(PositioningSystem):
         >>> orientation = gps.get_orientation()
         >>> print(f"Yaw: {orientation['yaw']}°")
         >>> gps.disconnect()
+        
+    Help:
+        >>> gps.help()              # Show full help
     """
+    
+    # HelpMixin properties
+    _device_name = "NovatelGPS"
+    _device_description = "Novatel GPS + Gyroscope for position and orientation"
+    _supported_types = ["Novatel"]
+    _default_config = {
+        "baudrate": 9600,
+        "protocol": "INSPVA",
+    }
+    _command_reference = {
+        "INSPVA": "Position + orientation (lat, lon, alt, roll, pitch, yaw)",
+        "unlogall": "Clear all logs",
+        "log inspvaa ontime 1": "Start logging at 1Hz",
+    }
 
     def __init__(
         self,
@@ -281,6 +339,8 @@ class NovatelGPS(PositioningSystem):
         baudrate: int = 9600,
         timeout: float = 2.0,
         name: str = "NovatelGPS",
+        config: Optional['GPSConfig'] = None,
+        serial_config: Optional[SerialConfig] = None,
     ):
         """
         Initialize the Novatel GPS.
@@ -290,7 +350,21 @@ class NovatelGPS(PositioningSystem):
             baudrate: Communication speed (default 9600)
             timeout: Command timeout
             name: Device name for logging
+            config: GPSConfig object
+            serial_config: SerialConfig object for port settings
         """
+        # If config object provided, use its values
+        if config is not None:
+            port = config.serial.port or port
+            baudrate = config.serial.baudrate
+            timeout = config.serial.timeout or timeout
+        
+        # If serial_config provided, use its values
+        if serial_config is not None:
+            port = serial_config.port or port
+            baudrate = serial_config.baudrate
+            timeout = serial_config.timeout or timeout
+        
         super().__init__(port=port, baudrate=baudrate, timeout=timeout, name=name)
         self._protocol = GPS_PROTOCOL["Novatel"]
         self._configured = False

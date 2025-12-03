@@ -27,12 +27,13 @@ from sciglob.core.utils import (
     shortest_rotation_path,
 )
 from sciglob.core.connection import parse_response, parse_position_response
+from sciglob.core.help_mixin import HelpMixin
 
 if TYPE_CHECKING:
     from sciglob.devices.head_sensor import HeadSensor
 
 
-class Tracker:
+class Tracker(HelpMixin):
     """
     Tracker/Motor controller interface.
     
@@ -53,7 +54,36 @@ class Tracker:
         ...     print(f"Position: zenith={zen}°, azimuth={azi}°")
         ...     # Move in steps directly
         ...     tracker.move_to_steps(zenith_steps=4500, azimuth_steps=-1200)
+        
+    Help:
+        >>> tracker.help()              # Show full help
+        >>> tracker.help('move_to')     # Help for specific method
+        >>> tracker.list_methods()      # List all methods
     """
+    
+    # HelpMixin properties
+    _device_name = "Tracker"
+    _device_description = "Motor controller for azimuth (pan) and zenith (tilt) positioning"
+    _supported_types = ["Directed Perceptions", "LuftBlickTR1"]
+    _default_config = {
+        "degrees_per_step": 0.01,
+        "zenith_limits": "[0, 90] degrees",
+        "azimuth_limits": "[0, 360] degrees",
+        "home_position": "[0.0, 180.0] degrees",
+    }
+    _command_reference = {
+        "TRw": "Get current position (WHERE command)",
+        "TRb<az>,<zen>": "Move both axes (BOTH command)",
+        "TRp<steps>": "Move azimuth (PAN command)",
+        "TRt<steps>": "Move zenith (TILT command)",
+        "TRr": "Soft reset tracker",
+        "TRY": "Power cycle tracker",
+        "TRm": "Get magnetic encoder position (LuftBlickTR1)",
+        "MA!t?": "Get azimuth motor temperature",
+        "MZ!t?": "Get zenith motor temperature",
+        "MA!a?": "Get azimuth alarm status",
+        "MZ!a?": "Get zenith alarm status",
+    }
 
     def __init__(self, head_sensor: "HeadSensor"):
         """

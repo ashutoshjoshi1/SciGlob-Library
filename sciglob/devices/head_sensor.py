@@ -1,6 +1,6 @@
 """Head Sensor interface for SciGlob instruments."""
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 import logging
 from sciglob.core.base import BaseDevice
 from sciglob.core.connection import SerialConnection, parse_response, parse_sensor_value
@@ -18,9 +18,10 @@ from sciglob.core.exceptions import (
     SensorError,
     CommunicationError,
 )
+from sciglob.core.help_mixin import HelpMixin
 
 
-class HeadSensor(BaseDevice):
+class HeadSensor(BaseDevice, HelpMixin):
     """
     Head Sensor interface for SciGlob instruments.
     
@@ -45,7 +46,43 @@ class HeadSensor(BaseDevice):
     Using context manager:
         >>> with HeadSensor(port="/dev/ttyUSB0") as hs:
         ...     print(hs.get_status())
+        
+    Help:
+        >>> hs.help()              # Show full help
+        >>> hs.help('move_to')     # Help for specific method
+        >>> hs.list_methods()      # List all methods
     """
+    
+    # HelpMixin properties
+    _device_name = "HeadSensor"
+    _device_description = "Main communication hub for SciGlob instruments"
+    _supported_types = ["SciGlobHSN1", "SciGlobHSN2"]
+    _default_config = {
+        "baudrate": 9600,
+        "bytesize": 8,
+        "parity": "N",
+        "stopbits": 1,
+        "timeout": 1.0,
+        "tracker_type": "Directed Perceptions",
+        "degrees_per_step": 0.01,
+        "motion_limits": "[0, 90, 0, 360]",
+        "home_position": "[0.0, 180.0]",
+    }
+    _command_reference = {
+        "?": "Get device ID",
+        "TRw": "Get tracker position",
+        "TRb<az>,<zen>": "Move tracker (both axes)",
+        "TRt<steps>": "Move zenith (tilt)",
+        "TRp<steps>": "Move azimuth (pan)",
+        "TRr": "Reset tracker",
+        "TRY": "Power cycle tracker",
+        "F1<1-9>": "Set filter wheel 1 position",
+        "F2<1-9>": "Set filter wheel 2 position",
+        "SB<pos>": "Set shadowband position",
+        "HTt?": "Read temperature (HSN2)",
+        "HTh?": "Read humidity (HSN2)",
+        "HTp?": "Read pressure (HSN2)",
+    }
 
     def __init__(
         self,
@@ -60,6 +97,8 @@ class HeadSensor(BaseDevice):
         degrees_per_step: float = 0.01,
         motion_limits: Optional[List[float]] = None,
         home_position: Optional[List[float]] = None,
+        config: Optional['HeadSensorConfig'] = None,
+        serial_config: Optional[SerialConfig] = None,
     ):
         """
         Initialize the Head Sensor.
@@ -76,7 +115,28 @@ class HeadSensor(BaseDevice):
             degrees_per_step: Tracker resolution (typically 0.01°/step)
             motion_limits: [zenith_min, zenith_max, azimuth_min, azimuth_max]
             home_position: [zenith_home, azimuth_home] in degrees
+            config: HeadSensorConfig object (overrides other parameters)
+            serial_config: SerialConfig object for port settings
         """
+        # If config object provided, use its values
+        if config is not None:
+            port = config.serial.port or port
+            baudrate = config.serial.baudrate
+            timeout = config.serial.timeout or timeout
+            sensor_type = config.sensor_type or sensor_type
+            fw1_filters = config.fw1_filters
+            fw2_filters = config.fw2_filters
+            tracker_type = config.tracker_type
+            degrees_per_step = config.degrees_per_step
+            motion_limits = config.motion_limits
+            home_position = config.home_position
+        
+        # If serial_config provided, use its values
+        if serial_config is not None:
+            port = serial_config.port or port
+            baudrate = serial_config.baudrate
+            timeout = serial_config.timeout or timeout
+        
         super().__init__(port=port, baudrate=baudrate, timeout=timeout, name=name)
         
         self._expected_sensor_type = sensor_type

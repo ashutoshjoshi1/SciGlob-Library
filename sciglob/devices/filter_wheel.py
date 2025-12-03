@@ -9,12 +9,13 @@ from sciglob.core.protocols import (
 )
 from sciglob.core.exceptions import FilterWheelError, DeviceError
 from sciglob.core.connection import parse_response
+from sciglob.core.help_mixin import HelpMixin
 
 if TYPE_CHECKING:
     from sciglob.devices.head_sensor import HeadSensor
 
 
-class FilterWheel:
+class FilterWheel(HelpMixin):
     """
     Filter Wheel controller interface.
     
@@ -35,7 +36,26 @@ class FilterWheel:
         ...     fw1.set_filter("OPEN")
         ...     # Get current filter
         ...     print(f"Current: {fw1.current_filter}")
+        
+    Help:
+        >>> fw1.help()              # Show full help
+        >>> fw1.list_methods()      # List all methods
     """
+    
+    # HelpMixin properties
+    _device_name = "FilterWheel"
+    _device_description = "Filter wheel controller (9 positions per wheel)"
+    _supported_types = ["FW1", "FW2"]
+    _default_config = {
+        "positions": 9,
+        "valid_filters": "OPEN, OPAQUE, U340, BP300, LPNIR, ND1-ND5, DIFF, etc.",
+    }
+    _command_reference = {
+        "F1<1-9>": "Set filter wheel 1 to position 1-9",
+        "F2<1-9>": "Set filter wheel 2 to position 1-9",
+        "F1r": "Reset filter wheel 1",
+        "F2r": "Reset filter wheel 2",
+    }
 
     def __init__(
         self,

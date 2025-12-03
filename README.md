@@ -28,7 +28,7 @@ SciGlob Library provides a unified Python interface for controlling scientific i
 ### From Source
 
 ```bash
-git clone https://github.com/SciGlob/SciGlob-Library.git
+git clone https://github.com/ashutoshjoshi1/SciGlob-Library.git
 cd SciGlob-Library
 pip install -e .
 ```
@@ -181,7 +181,7 @@ with NovatelGPS(port="/dev/ttyUSB4") as gps:
 │  │  Head   │ │ Tracker │ │ Filter  │ │  Temp   │ │  GPS    │   │
 │  │ Sensor  │ │         │ │  Wheel  │ │ Control │ │         │   │
 │  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘   │
-│       │          │          │          │          │            │
+│       │           │          │          │          │            │
 │       └──────────┴──────────┘          │          │            │
 │                  │                      │          │            │
 └──────────────────┼──────────────────────┼──────────┼────────────┘

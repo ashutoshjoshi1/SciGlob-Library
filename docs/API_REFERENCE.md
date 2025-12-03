@@ -29,7 +29,7 @@ This document provides a complete API reference for developers using the SciGlob
 ### From Source
 
 ```bash
-git clone https://github.com/SciGlob/SciGlob-Library.git
+git clone https://github.com/ashutoshjoshi1/SciGlob-Library.git
 cd SciGlob-Library
 pip install -e .
 ```

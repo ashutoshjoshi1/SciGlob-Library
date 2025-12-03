@@ -78,11 +78,11 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/SciGlob/SciGlob-Library"
-Documentation = "https://github.com/SciGlob/SciGlob-Library/blob/main/docs/API_REFERENCE.md"
-Repository = "https://github.com/SciGlob/SciGlob-Library.git"
-Issues = "https://github.com/SciGlob/SciGlob-Library/issues"
-Changelog = "https://github.com/SciGlob/SciGlob-Library/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/ashutoshjoshi1/SciGlob-Library"
+Documentation = "https://github.com/ashutoshjoshi1/SciGlob-Library/blob/main/docs/API_REFERENCE.md"
+Repository = "https://github.com/ashutoshjoshi1/SciGlob-Library.git"
+Issues = "https://github.com/ashutoshjoshi1/SciGlob-Library/issues"
+Changelog = "https://github.com/ashutoshjoshi1/SciGlob-Library/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = {"" = "."}

@@ -10,10 +10,10 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-    {name = "SciGlob Team", email = "support@sciglob.com"}
+    {name = "Ashutosh Joshi", email = "ajoshi@sciglob.com"}
 ]
 maintainers = [
-    {name = "SciGlob Team", email = "support@sciglob.com"}
+    {name = "Ashutosh Joshi", email = "ajoshi@sciglob.com"}
 ]
 keywords = [
     "scientific-instrumentation",

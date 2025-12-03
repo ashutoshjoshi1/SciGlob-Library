@@ -1,0 +1,23 @@
+# DS - Direct Sun Measurement Routine
+# This routine performs a direct sun measurement with intensity check
+
+DESCRIPTION -> Direct sun measurement with automatic intensity adjustment
+
+# Check and adjust intensity before measurement
+CHECK INTENSITY -> ADJUSTIT=FROMCURRENT; ADJUSTND=FROMMAX; %SATURATION=80
+
+# Set pointing to track the sun
+SET POINTING -> DELTA=MIDDLE; ZEN=0; AZI=0; ZENMODE=RELSUN; AZIMODE=RELSUN
+
+# Set filter wheels for direct sun measurement
+SET FILTERWHEELS -> FUNCFILT=OPEN
+
+# Set spectrometer parameters
+SET SPECTROMETER -> IT=CURRENT; NCYCLES=10; NREPETITIONS=5; DURATION=AUTO
+
+# Process info for data classification
+PROCESSINFO -> TYPE=SUN; DISTANCE=NO
+
+# Perform measurement
+MEASURE -> DISPLAY=MEAN; SAVE=STDERR; SATCHECK=YES
+

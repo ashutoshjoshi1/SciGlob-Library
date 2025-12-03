@@ -1,0 +1,25 @@
+# SK - Sky Scan Routine
+# This routine performs sky radiance measurements at multiple angles
+
+DESCRIPTION -> Sky scan at multiple zenith angles for radiance profile
+
+# Set filter for sky measurement
+SET FILTERWHEELS -> FUNCFILT=OPEN; FW2=DIFF
+
+# Set spectrometer for sky measurements
+SET SPECTROMETER -> IT=100; NCYCLES=20; NREPETITIONS=3
+
+# Process as sky data
+PROCESSINFO -> TYPE=SKY
+
+# Loop through zenith angles
+START LOOP -> XIJ=30,45,60,75,85
+
+# Point at current zenith angle in principal plane
+SET POINTING -> ZEN=XIJ; AZI=0; ZENMODE=ABS; AZIMODE=RELSUN
+
+# Take measurement
+MEASURE -> DISPLAY=MEAN; SAVE=STDERR
+
+STOP LOOP
+

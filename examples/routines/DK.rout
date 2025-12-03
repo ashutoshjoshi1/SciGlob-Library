@@ -1,0 +1,20 @@
+# DK - Dark Current Measurement Routine
+# This routine measures dark current with opaque filter
+
+DESCRIPTION -> Dark current measurement with opaque filter
+
+# Set opaque filter
+SET FILTERWHEELS -> FW1=1; FW2=OPAQUE
+
+# Point to zenith (doesn't matter for dark)
+SET POINTING -> ZEN=0; AZI=0; ZENMODE=ABS; AZIMODE=ABS
+
+# Set spectrometer for dark measurement
+SET SPECTROMETER -> IT=100; NCYCLES=50; NREPETITIONS=1
+
+# Process as special measurement
+PROCESSINFO -> TYPE=SPECIAL
+
+# Measure dark
+MEASURE -> DISPLAY=MEAN; SAVE=STDERR; SATCHECK=NO
+

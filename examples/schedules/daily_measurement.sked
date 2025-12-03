@@ -1,0 +1,67 @@
+# Daily Measurement Schedule
+# This schedule runs a typical day of measurements
+# 
+# Schedule entries are enclosed in braces {} and contain:
+#   label -> Unique identifier for the entry
+#   start -> When to start (time reference + optional offset)
+#   end -> When to end (optional, for repeated entries)
+#   repetitions -> Number of times to repeat (-1 for unlimited until end)
+#   priority -> Priority level (higher = more important)
+#   commands -> Routine sequence string
+#   if -> Condition for execution (optional)
+
+# Morning sun search and calibration at sunrise
+{
+    'label' -> 'morning_sunsearch',
+    'start' -> 'solarzen90am+00:30',
+    'priority' -> 10,
+    'commands' -> 'SS',
+    'if' -> 'sun_visible'
+}
+
+# Morning direct sun measurements
+{
+    'label' -> 'morning_directsun',
+    'start' -> 'THEN+00:05',
+    'end' -> 'localnoon-00:30',
+    'repetitions' -> -1,
+    'priority' -> 8,
+    'commands' -> 'DS'
+}
+
+# Midday sky scans
+{
+    'label' -> 'midday_skyscan',
+    'start' -> 'localnoon-00:15',
+    'end' -> 'localnoon+00:15',
+    'repetitions' -> 2,
+    'priority' -> 7,
+    'commands' -> 'SK'
+}
+
+# Afternoon direct sun measurements
+{
+    'label' -> 'afternoon_directsun',
+    'start' -> 'localnoon+00:30',
+    'end' -> 'solarzen90pm-01:00',
+    'repetitions' -> -1,
+    'priority' -> 8,
+    'commands' -> 'DS'
+}
+
+# Evening sun search before sunset
+{
+    'label' -> 'evening_sunsearch',
+    'start' -> 'solarzen90pm-00:30',
+    'priority' -> 10,
+    'commands' -> 'SS'
+}
+
+# Dark current measurement after sunset
+{
+    'label' -> 'evening_dark',
+    'start' -> 'solarzen90pm+00:30',
+    'priority' -> 5,
+    'commands' -> 'DK'
+}
+

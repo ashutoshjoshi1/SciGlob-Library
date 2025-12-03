@@ -1,0 +1,35 @@
+# Moon Observation Schedule
+# This schedule is for nighttime lunar observations
+# Only executes when moon is visible
+
+# Moon search at moonrise
+{
+    'label' -> 'moon_search',
+    'start' -> 'moonrise+00:15',
+    'priority' -> 10,
+    'commands' -> 'MS',
+    'if' -> 'moon_visible'
+}
+
+# Lunar measurements throughout the night
+{
+    'label' -> 'lunar_measurements',
+    'start' -> 'THEN+00:10',
+    'end' -> 'moonset-00:30',
+    'repetitions' -> -1,
+    'priority' -> 8,
+    'commands' -> 'DM',
+    'if' -> 'moon_visible'
+}
+
+# Measurements only during specific moon phases (near full moon)
+{
+    'label' -> 'fullmoon_intensive',
+    'start' -> 'moonrise+01:00',
+    'end' -> 'moonset-01:00',
+    'repetitions' -> -1,
+    'priority' -> 9,
+    'commands' -> 'DMDM',
+    'if' -> 'moonphase_full'
+}
+

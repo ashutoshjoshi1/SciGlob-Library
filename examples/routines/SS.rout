@@ -1,0 +1,20 @@
+# SS - Sun Search Routine (Long)
+# This routine performs a long sun search for alignment calibration
+
+DESCRIPTION -> Long sun search routine for tracker alignment calibration
+
+# Check intensity first
+CHECK INTENSITY -> ADJUSTIT=FROMMIN; ADJUSTND=FROMMAX; %SATURATION=50
+
+# Point towards the sun position
+SET POINTING -> DELTA=MIDDLE; ZEN=0; AZI=0; ZENMODE=RELSUN; AZIMODE=RELSUN
+
+# Set filter for sun measurement
+SET FILTERWHEELS -> FUNCFILT=OPEN
+
+# Short integration for scan
+SET SPECTROMETER -> IT=MIN; NCYCLES=5; NREPETITIONS=1
+
+# Sun search is typically a special command
+PROCESSINFO -> TYPE=SUN
+

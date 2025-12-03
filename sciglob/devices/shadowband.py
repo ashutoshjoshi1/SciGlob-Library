@@ -19,9 +19,13 @@ class Shadowband(HelpMixin):
     Controls the shadowband arm position through the Head Sensor.
     
     Commands:
-    - Move: "SBm<position>" - Move to step position
-    - Reset: "SBr" - Reset shadowband
+    - Move: "SBm<position>" - Move to step position (-1000 to 1000)
+    - Reset: "SBr" - Reset shadowband to home position
     - Response: "SB0" (success) or "SB<N>" (error code N)
+    
+    Position Limits:
+    - Minimum: -1000 steps
+    - Maximum: 1000 steps
     
     Example:
         >>> with HeadSensor(port="/dev/ttyUSB0") as hs:
@@ -34,6 +38,10 @@ class Shadowband(HelpMixin):
         >>> sb.help()              # Show full help
     """
     
+    # Position limits (from Blick reference)
+    MIN_POSITION = -1000
+    MAX_POSITION = 1000
+    
     # HelpMixin properties
     _device_name = "Shadowband"
     _device_description = "Shadowband arm position controller"
@@ -41,10 +49,12 @@ class Shadowband(HelpMixin):
     _default_config = {
         "resolution": "0.36 degrees/step",
         "ratio": "0.5 (offset/radius)",
+        "position_limits": "[-1000, 1000] steps",
     }
     _command_reference = {
-        "SBm<pos>": "Move to step position",
+        "SBm<pos>": "Move to step position (-1000 to 1000)",
         "SBr": "Reset shadowband to home",
+        "SBs": "Power reset shadowband",
     }
 
     def __init__(
@@ -112,8 +122,19 @@ class Shadowband(HelpMixin):
         Move shadowband to step position.
         
         Args:
-            position: Target step position
+            position: Target step position (-1000 to 1000)
+            
+        Raises:
+            ValueError: If position is out of valid range
+            DeviceError: If movement fails
         """
+        # Validate position range
+        if position < self.MIN_POSITION or position > self.MAX_POSITION:
+            raise ValueError(
+                f"Position {position} is out of range "
+                f"[{self.MIN_POSITION}, {self.MAX_POSITION}]"
+            )
+        
         command = f"SBm{position}"
         self.logger.info(f"Moving shadowband to position {position}")
         
@@ -149,6 +170,9 @@ class Shadowband(HelpMixin):
     def reset(self) -> None:
         """
         Reset the shadowband to home position.
+        
+        Raises:
+            DeviceError: If reset fails
         """
         self.logger.info("Resetting shadowband")
         
@@ -157,6 +181,25 @@ class Shadowband(HelpMixin):
         
         self._position = 0
 
+    def power_reset(self) -> None:
+        """
+        Perform a power reset on the shadowband.
+        
+        This sends a power cycle command through the head sensor.
+        Use this when the shadowband is unresponsive or needs reinitialization.
+        
+        Raises:
+            DeviceError: If power reset fails
+        """
+        self.logger.info("Power cycling shadowband")
+        
+        # Power reset command (same as reset with 's' suffix)
+        response = self._send_command("SBs")
+        self._check_response(response)
+        
+        self._position = 0
+        self.logger.info("Shadowband power reset complete")
+
     def get_status(self) -> Dict[str, Any]:
         """Get shadowband status."""
         return {
@@ -164,5 +207,6 @@ class Shadowband(HelpMixin):
             "angle": self.angle,
             "resolution": self._resolution,
             "ratio": self._ratio,
+            "position_limits": (self.MIN_POSITION, self.MAX_POSITION),
         }
 

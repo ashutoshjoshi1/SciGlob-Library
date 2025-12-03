@@ -9,6 +9,7 @@ A Python library for controlling scientific instruments including:
 - Temperature Controllers (TETech1, TETech2)
 - Humidity Sensors (HDC2080EVM)
 - GPS/Positioning Systems (Novatel, GlobalSat)
+- Automated Routines and Schedules (Blick-compatible)
 
 Installation:
     pip install sciglob
@@ -22,6 +23,17 @@ Quick Start:
     ...     hs.filter_wheel_1.set_filter("OPEN")
     ...     # Get sensor readings
     ...     print(hs.get_all_sensors())
+
+Automation (Routines & Schedules):
+    >>> from sciglob.automation import Routine, Schedule, ScheduleExecutor
+    >>> 
+    >>> # Load routines from files
+    >>> routines = Routine.from_file("routines/DS.rout")
+    >>> 
+    >>> # Load and execute a schedule
+    >>> schedule = Schedule.from_file("schedules/daily.sked")
+    >>> executor = ScheduleExecutor(schedule, routines, head_sensor=hs)
+    >>> executor.start()
 
 Help:
     >>> import sciglob
@@ -91,6 +103,41 @@ from sciglob.devices.temperature_controller import TemperatureController
 from sciglob.devices.humidity_sensor import HumiditySensor
 from sciglob.devices.positioning import PositioningSystem, GlobalSatGPS, NovatelGPS
 
+# Automation
+from sciglob.automation import (
+    # Routines
+    Routine,
+    RoutineCommand,
+    RoutineKeyword,
+    RoutineParameters,
+    RoutineReader,
+    # Schedules
+    Schedule,
+    ScheduleEntry,
+    ScheduleParameters,
+    ScheduleReader,
+    TimeReference,
+    # Execution
+    RoutineExecutor,
+    ScheduleExecutor,
+    ExecutionContext,
+    ExecutionState,
+    # Timing
+    AstronomicalEvents,
+    TimeCalculator,
+    calculate_solar_position,
+    calculate_lunar_position,
+    # Exceptions
+    AutomationError,
+    RoutineError,
+    ScheduleError,
+    ExecutionError,
+    TimingError,
+    RoutineNotFoundError,
+    ScheduleParseError,
+    RoutineParseError,
+)
+
 
 def help():
     """Display library help information."""
@@ -151,4 +198,35 @@ __all__ = [
     "PositioningSystem",
     "GlobalSatGPS",
     "NovatelGPS",
+    # Automation - Routines
+    "Routine",
+    "RoutineCommand",
+    "RoutineKeyword",
+    "RoutineParameters",
+    "RoutineReader",
+    # Automation - Schedules
+    "Schedule",
+    "ScheduleEntry",
+    "ScheduleParameters",
+    "ScheduleReader",
+    "TimeReference",
+    # Automation - Execution
+    "RoutineExecutor",
+    "ScheduleExecutor",
+    "ExecutionContext",
+    "ExecutionState",
+    # Automation - Timing
+    "AstronomicalEvents",
+    "TimeCalculator",
+    "calculate_solar_position",
+    "calculate_lunar_position",
+    # Automation - Exceptions
+    "AutomationError",
+    "RoutineError",
+    "ScheduleError",
+    "ExecutionError",
+    "TimingError",
+    "RoutineNotFoundError",
+    "ScheduleParseError",
+    "RoutineParseError",
 ]

@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 # Constants
 DEG2RAD = math.pi / 180.0
 RAD2DEG = 180.0 / math.pi
-EARTH_RADIUS_EQUATOR = 6378.5  # km
-EARTH_RADIUS_POLAR = 6357.0   # km
+EARTH_RADIUS_EQUATOR = 6378.5  # in km
+EARTH_RADIUS_POLAR = 6357.0   # in km
 
 
 class Target(Enum):

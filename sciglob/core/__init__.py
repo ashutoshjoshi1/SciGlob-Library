@@ -1,45 +1,45 @@
 """Core utilities and base classes for SciGlob library."""
 
 from sciglob.core.base import BaseDevice
-from sciglob.core.connection import SerialConnection, parse_response, parse_position_response
+from sciglob.core.connection import SerialConnection, parse_position_response, parse_response
 from sciglob.core.exceptions import (
-    SciGlobError,
-    ConnectionError,
     CommunicationError,
-    DeviceError,
-    TimeoutError,
     ConfigurationError,
-    TrackerError,
-    MotorError,
+    ConnectionError,
+    DeviceError,
     FilterWheelError,
-    PositionError,
     HomingError,
     MotorAlarmError,
-    SensorError,
+    MotorError,
+    PositionError,
     RecoveryError,
+    SciGlobError,
+    SensorError,
+    TimeoutError,
+    TrackerError,
 )
 from sciglob.core.protocols import (
+    ERROR_MESSAGES,
+    MOTOR_ALARM_MESSAGES,
+    TIMING_CONFIG,
+    CommandProtocol,
     DeviceType,
     ErrorCode,
     MotorAlarmCode,
     SerialConfig,
-    CommandProtocol,
-    ERROR_MESSAGES,
-    MOTOR_ALARM_MESSAGES,
-    TIMING_CONFIG,
     get_error_message,
     get_motor_alarm_message,
 )
 from sciglob.core.utils import (
+    calculate_angular_distance,
+    dec2hex,
     degrees_to_steps,
+    get_checksum,
+    hex2dec,
+    normalize_azimuth,
+    shortest_rotation_path,
     steps_to_degrees,
     validate_angle,
-    normalize_azimuth,
-    calculate_angular_distance,
-    shortest_rotation_path,
-    dec2hex,
-    hex2dec,
-    get_checksum,
 )
 
 __all__ = [

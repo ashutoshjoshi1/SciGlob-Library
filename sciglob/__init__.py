@@ -26,10 +26,10 @@ Quick Start:
 
 Automation (Routines & Schedules):
     >>> from sciglob.automation import Routine, Schedule, ScheduleExecutor
-    >>> 
+    >>>
     >>> # Load routines from files
     >>> routines = Routine.from_file("routines/DS.rout")
-    >>> 
+    >>>
     >>> # Load and execute a schedule
     >>> schedule = Schedule.from_file("schedules/daily.sked")
     >>> executor = ScheduleExecutor(schedule, routines, head_sensor=hs)
@@ -39,7 +39,7 @@ Help:
     >>> import sciglob
     >>> sciglob.help()                    # Library overview
     >>> sciglob.help_config()             # Configuration help
-    >>> 
+    >>>
     >>> hs = HeadSensor()
     >>> hs.help()                         # Device help
     >>> hs.help('method_name')            # Method help
@@ -50,93 +50,88 @@ __version__ = "0.1.4"
 __author__ = "Ashutosh Joshi"
 
 # Core components
-from sciglob.core.exceptions import (
-    SciGlobError,
-    ConnectionError,
-    CommunicationError,
-    DeviceError,
-    TimeoutError,
-    ConfigurationError,
-    TrackerError,
-    MotorError,
-    FilterWheelError,
-    PositionError,
-    HomingError,
-    MotorAlarmError,
-    SensorError,
-    RecoveryError,
-)
-
-from sciglob.core.protocols import (
-    DeviceType,
-    ErrorCode,
-    MotorAlarmCode,
-    SerialConfig,
-    get_error_message,
-    get_motor_alarm_message,
-)
-
-from sciglob.core.utils import (
-    degrees_to_steps,
-    steps_to_degrees,
-    normalize_azimuth,
-)
-
-from sciglob.core.help_mixin import show_library_help, show_config_help
-
-# Configuration
-from sciglob.config import (
-    SerialConfig,
-    HeadSensorConfig,
-    TemperatureControllerConfig,
-    HumiditySensorConfig,
-    GPSConfig,
-    HardwareConfig,
-)
-
-# Devices
-from sciglob.devices.head_sensor import HeadSensor
-from sciglob.devices.tracker import Tracker
-from sciglob.devices.filter_wheel import FilterWheel
-from sciglob.devices.shadowband import Shadowband
-from sciglob.devices.temperature_controller import TemperatureController
-from sciglob.devices.humidity_sensor import HumiditySensor
-from sciglob.devices.positioning import PositioningSystem, GlobalSatGPS, NovatelGPS
-
 # Automation
 from sciglob.automation import (
+    # Timing
+    AstronomicalEvents,
+    # Exceptions
+    AutomationError,
+    ExecutionContext,
+    ExecutionError,
+    ExecutionState,
     # Routines
     Routine,
     RoutineCommand,
+    RoutineError,
+    # Execution
+    RoutineExecutor,
     RoutineKeyword,
+    RoutineNotFoundError,
     RoutineParameters,
+    RoutineParseError,
     RoutineReader,
     # Schedules
     Schedule,
     ScheduleEntry,
-    ScheduleParameters,
-    ScheduleReader,
-    TimeReference,
-    # Execution
-    RoutineExecutor,
-    ScheduleExecutor,
-    ExecutionContext,
-    ExecutionState,
-    # Timing
-    AstronomicalEvents,
-    TimeCalculator,
-    calculate_solar_position,
-    calculate_lunar_position,
-    # Exceptions
-    AutomationError,
-    RoutineError,
     ScheduleError,
-    ExecutionError,
-    TimingError,
-    RoutineNotFoundError,
+    ScheduleExecutor,
+    ScheduleParameters,
     ScheduleParseError,
-    RoutineParseError,
+    ScheduleReader,
+    TimeCalculator,
+    TimeReference,
+    TimingError,
+    calculate_lunar_position,
+    calculate_solar_position,
 )
+
+# Configuration
+from sciglob.config import (
+    GPSConfig,
+    HardwareConfig,
+    HeadSensorConfig,
+    HumiditySensorConfig,
+    SerialConfig,
+    TemperatureControllerConfig,
+)
+from sciglob.core.exceptions import (
+    CommunicationError,
+    ConfigurationError,
+    ConnectionError,
+    DeviceError,
+    FilterWheelError,
+    HomingError,
+    MotorAlarmError,
+    MotorError,
+    PositionError,
+    RecoveryError,
+    SciGlobError,
+    SensorError,
+    TimeoutError,
+    TrackerError,
+)
+from sciglob.core.help_mixin import show_config_help, show_library_help
+from sciglob.core.protocols import (
+    DeviceType,
+    ErrorCode,
+    MotorAlarmCode,
+    get_error_message,
+    get_motor_alarm_message,
+)
+from sciglob.core.utils import (
+    degrees_to_steps,
+    normalize_azimuth,
+    steps_to_degrees,
+)
+from sciglob.devices.filter_wheel import FilterWheel
+
+# Devices
+from sciglob.devices.head_sensor import HeadSensor
+from sciglob.devices.humidity_sensor import HumiditySensor
+from sciglob.devices.positioning import GlobalSatGPS, NovatelGPS, PositioningSystem
+from sciglob.devices.shadowband import Shadowband
+from sciglob.devices.temperature_controller import TemperatureController
+from sciglob.devices.tracker import Tracker
 
 
 def help():

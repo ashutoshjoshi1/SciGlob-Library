@@ -1,22 +1,24 @@
 """Configuration settings management."""
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
 from pathlib import Path
+from typing import Any, Optional
+
 import yaml
+
 from sciglob.core.exceptions import ConfigurationError
 
 
 @dataclass
 class SerialSettings:
     """Serial port configuration."""
-    
+
     port: Optional[str] = None
     baudrate: int = 9600
     timeout: float = 1.0
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SerialSettings":
+    def from_dict(cls, data: dict[str, Any]) -> "SerialSettings":
         return cls(
             port=data.get("port"),
             baudrate=data.get("baudrate", 9600),
@@ -27,16 +29,16 @@ class SerialSettings:
 @dataclass
 class MotorSettings:
     """Motor configuration settings."""
-    
+
     serial: SerialSettings = field(default_factory=SerialSettings)
     min_position: float = 0.0
     max_position: float = 360.0
     home_position: float = 0.0
     steps_per_degree: float = 100.0
     slave_id: int = 1
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MotorSettings":
+    def from_dict(cls, data: dict[str, Any]) -> "MotorSettings":
         serial_data = {
             "port": data.get("port"),
             "baudrate": data.get("baudrate", 115200),
@@ -52,10 +54,10 @@ class MotorSettings:
         )
 
 
-@dataclass 
+@dataclass
 class FilterSettings:
     """Filter configuration."""
-    
+
     position: int
     name: str
     wavelength: Optional[float] = None
@@ -65,16 +67,16 @@ class FilterSettings:
 @dataclass
 class FilterWheelSettings:
     """Filter wheel configuration."""
-    
+
     num_positions: int = 6
-    filters: List[FilterSettings] = field(default_factory=list)
+    filters: list[FilterSettings] = field(default_factory=list)
     home_position: int = 1
 
 
 @dataclass
 class SensorHeadSettings:
     """Sensor head configuration."""
-    
+
     serial: SerialSettings = field(default_factory=SerialSettings)
     filter_wheel: FilterWheelSettings = field(default_factory=FilterWheelSettings)
 
@@ -83,61 +85,61 @@ class SensorHeadSettings:
 class Settings:
     """
     Main settings container for SciGlob configuration.
-    
+
     Can be loaded from YAML/JSON files or created programmatically.
-    
+
     Example:
         >>> settings = Settings.from_yaml("config.yaml")
         >>> print(settings.motors.azimuth.serial.port)
     """
-    
+
     sensor_head: SensorHeadSettings = field(default_factory=SensorHeadSettings)
     azimuth: MotorSettings = field(default_factory=MotorSettings)
     zenith: MotorSettings = field(default_factory=MotorSettings)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Settings":
+    def from_dict(cls, data: dict[str, Any]) -> "Settings":
         """Create settings from dictionary."""
         settings = cls()
-        
+
         # Load sensor head settings
         if "sensor_head" in data:
             sh_data = data["sensor_head"]
             settings.sensor_head.serial = SerialSettings.from_dict(sh_data)
-        
+
         # Load motor settings
         motors = data.get("motors", {})
         if "azimuth" in motors:
             settings.azimuth = MotorSettings.from_dict(motors["azimuth"])
         if "zenith" in motors:
             settings.zenith = MotorSettings.from_dict(motors["zenith"])
-            
+
         return settings
-    
+
     @classmethod
     def from_yaml(cls, path: str) -> "Settings":
         """
         Load settings from YAML file.
-        
+
         Args:
             path: Path to YAML configuration file
-            
+
         Returns:
             Settings instance
-            
+
         Raises:
             ConfigurationError: If file cannot be loaded
         """
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = yaml.safe_load(f)
             return cls.from_dict(data or {})
-        except FileNotFoundError:
-            raise ConfigurationError(f"Configuration file not found: {path}")
+        except FileNotFoundError as e:
+            raise ConfigurationError(f"Configuration file not found: {path}") from e
         except yaml.YAMLError as e:
-            raise ConfigurationError(f"Invalid YAML in {path}: {e}")
-    
-    def to_dict(self) -> Dict[str, Any]:
+            raise ConfigurationError(f"Invalid YAML in {path}: {e}") from e
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert settings to dictionary."""
         return {
             "sensor_head": {
@@ -160,7 +162,7 @@ class Settings:
                 },
             },
         }
-    
+
     def save_yaml(self, path: str) -> None:
         """Save settings to YAML file."""
         with open(path, "w") as f:
@@ -170,22 +172,22 @@ class Settings:
 def load_config(path: Optional[str] = None) -> Settings:
     """
     Load configuration from file or return defaults.
-    
+
     Args:
         path: Optional path to config file. If None, returns defaults.
-        
+
     Returns:
         Settings instance
     """
     if path is None:
         return Settings()
-        
+
     path_obj = Path(path)
-    
+
     if not path_obj.exists():
         # Return defaults if file doesn't exist
         return Settings()
-        
+
     if path_obj.suffix in (".yaml", ".yml"):
         return Settings.from_yaml(str(path_obj))
     else:

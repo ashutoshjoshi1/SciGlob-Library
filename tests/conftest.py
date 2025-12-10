@@ -1,7 +1,8 @@
 """Pytest configuration and fixtures for SciGlob tests."""
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
 
 
 @pytest.fixture
@@ -42,7 +43,7 @@ def mock_head_sensor():
     mock.home_position = [0.0, 180.0]
     mock.fw1_filters = ["OPEN", "U340", "BP300", "LPNIR", "ND1", "ND2", "ND3", "ND4", "OPAQUE"]
     mock.fw2_filters = ["OPEN", "DIFF", "U340+DIFF", "BP300+DIFF", "LPNIR+DIFF", "ND1", "ND2", "ND3", "OPAQUE"]
-    
+
     # Mock send_command to return success responses
     def mock_send_command(cmd, timeout=None):
         if cmd == "?":
@@ -64,7 +65,7 @@ def mock_head_sensor():
                 return "Alarm Code = 0"
             return "MA!215"
         return "OK"
-    
+
     mock.send_command = Mock(side_effect=mock_send_command)
     return mock
 

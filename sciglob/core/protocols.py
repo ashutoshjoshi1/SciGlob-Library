@@ -1,7 +1,6 @@
 """Protocol definitions and constants for SciGlob devices."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
 from enum import Enum, IntEnum
 
 
@@ -45,7 +44,7 @@ class MotorAlarmCode(IntEnum):
 
 
 # Error code messages
-ERROR_MESSAGES: Dict[int, str] = {
+ERROR_MESSAGES: dict[int, str] = {
     0: "OK",
     1: "Cannot read from head sensor microcontroller memory",
     2: "Wrong tracker echo response",
@@ -59,7 +58,7 @@ ERROR_MESSAGES: Dict[int, str] = {
     99: "Low level serial communication error",
 }
 
-MOTOR_ALARM_MESSAGES: Dict[int, str] = {
+MOTOR_ALARM_MESSAGES: dict[int, str] = {
     0: "No alarm",
     10: "Excessive position deviation",
     26: "Motor overheating",
@@ -85,7 +84,7 @@ class SerialConfig:
 
 
 # Default configurations for each device type
-DEVICE_CONFIGS: Dict[str, SerialConfig] = {
+DEVICE_CONFIGS: dict[str, SerialConfig] = {
     "head_sensor": SerialConfig(baudrate=9600),
     "temperature_controller": SerialConfig(baudrate=9600),
     "humidity_sensor": SerialConfig(baudrate=9600),

@@ -1,6 +1,7 @@
 """Custom exceptions for SciGlob automation module."""
 
-from typing import Optional, List
+from typing import Optional
+
 from sciglob.core.exceptions import SciGlobError
 
 
@@ -11,7 +12,7 @@ class AutomationError(SciGlobError):
 
 class RoutineError(AutomationError):
     """Raised when a routine operation fails."""
-    
+
     def __init__(self, message: str, routine_code: Optional[str] = None):
         super().__init__(message)
         self.routine_code = routine_code
@@ -19,7 +20,7 @@ class RoutineError(AutomationError):
 
 class ScheduleError(AutomationError):
     """Raised when a schedule operation fails."""
-    
+
     def __init__(self, message: str, schedule_name: Optional[str] = None):
         super().__init__(message)
         self.schedule_name = schedule_name
@@ -27,7 +28,7 @@ class ScheduleError(AutomationError):
 
 class ExecutionError(AutomationError):
     """Raised when routine/schedule execution fails."""
-    
+
     def __init__(
         self,
         message: str,
@@ -41,7 +42,7 @@ class ExecutionError(AutomationError):
 
 class TimingError(AutomationError):
     """Raised when time calculation or scheduling fails."""
-    
+
     def __init__(self, message: str, time_reference: Optional[str] = None):
         super().__init__(message)
         self.time_reference = time_reference
@@ -49,8 +50,8 @@ class TimingError(AutomationError):
 
 class RoutineNotFoundError(RoutineError):
     """Raised when a routine file or code is not found."""
-    
-    def __init__(self, routine_code: str, search_paths: Optional[List[str]] = None):
+
+    def __init__(self, routine_code: str, search_paths: Optional[list[str]] = None):
         message = f"Routine '{routine_code}' not found"
         if search_paths:
             message += f" in paths: {', '.join(search_paths)}"
@@ -60,7 +61,7 @@ class RoutineNotFoundError(RoutineError):
 
 class ScheduleParseError(ScheduleError):
     """Raised when a schedule file cannot be parsed."""
-    
+
     def __init__(
         self,
         message: str,
@@ -80,7 +81,7 @@ class ScheduleParseError(ScheduleError):
 
 class RoutineParseError(RoutineError):
     """Raised when a routine file cannot be parsed."""
-    
+
     def __init__(
         self,
         message: str,
@@ -100,12 +101,12 @@ class RoutineParseError(RoutineError):
 
 class SystemRequirementError(RoutineError):
     """Raised when system requirements for a routine are not met."""
-    
+
     def __init__(
         self,
         message: str,
         routine_code: Optional[str] = None,
-        missing_requirements: Optional[List[str]] = None,
+        missing_requirements: Optional[list[str]] = None,
     ):
         super().__init__(message, routine_code)
         self.missing_requirements = missing_requirements or []
@@ -113,7 +114,7 @@ class SystemRequirementError(RoutineError):
 
 class LoopError(RoutineError):
     """Raised when there's an error in a loop construct."""
-    
+
     def __init__(
         self,
         message: str,
@@ -126,7 +127,7 @@ class LoopError(RoutineError):
 
 class IntensityCheckError(ExecutionError):
     """Raised when intensity check fails during routine execution."""
-    
+
     def __init__(
         self,
         message: str,
@@ -140,7 +141,7 @@ class IntensityCheckError(ExecutionError):
 
 class SaturationError(ExecutionError):
     """Raised when detector saturation is detected."""
-    
+
     def __init__(
         self,
         message: str,

@@ -5,15 +5,15 @@ including default serial port settings based on Blick reference specifications.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
+from typing import Any, Optional
+
 import yaml
-import os
 
 
 @dataclass
 class SerialConfig:
     """Serial port configuration settings.
-    
+
     Attributes:
         port: Serial port name (e.g., 'COM1', '/dev/ttyUSB0')
         baudrate: Communication speed in bits per second
@@ -25,7 +25,7 @@ class SerialConfig:
         xonxoff: Enable software flow control
         rtscts: Enable hardware (RTS/CTS) flow control
         dsrdtr: Enable hardware (DSR/DTR) flow control
-    
+
     Example:
         >>> config = SerialConfig(port='COM3', baudrate=9600)
         >>> print(config)
@@ -40,8 +40,8 @@ class SerialConfig:
     xonxoff: bool = False
     rtscts: bool = False
     dsrdtr: bool = False
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for pyserial."""
         return {
             'port': self.port,
@@ -55,7 +55,7 @@ class SerialConfig:
             'rtscts': self.rtscts,
             'dsrdtr': self.dsrdtr,
         }
-    
+
     @classmethod
     def help(cls) -> str:
         """Return help text for SerialConfig."""
@@ -77,17 +77,17 @@ Default Values (Blick Reference):
 Usage:
 ------
   from sciglob.config import SerialConfig
-  
+
   # Create with defaults
   config = SerialConfig(port='/dev/ttyUSB0')
-  
+
   # Create with custom settings
   config = SerialConfig(
       port='COM3',
       baudrate=115200,
       timeout=1.0
   )
-  
+
   # Apply to device
   from sciglob import HeadSensor
   hs = HeadSensor(serial_config=config)
@@ -97,7 +97,7 @@ Usage:
 @dataclass
 class HeadSensorConfig:
     """Configuration for Head Sensor devices.
-    
+
     Attributes:
         serial: Serial port configuration
         sensor_type: Expected sensor type ('SciGlobHSN1' or 'SciGlobHSN2')
@@ -114,13 +114,13 @@ class HeadSensorConfig:
     sensor_type: Optional[str] = None
     tracker_type: str = "Directed Perceptions"
     degrees_per_step: float = 0.01
-    motion_limits: List[float] = field(default_factory=lambda: [0, 90, 0, 360])
-    home_position: List[float] = field(default_factory=lambda: [0.0, 180.0])
-    fw1_filters: List[str] = field(default_factory=lambda: ["OPEN"] * 9)
-    fw2_filters: List[str] = field(default_factory=lambda: ["OPEN"] * 9)
+    motion_limits: list[float] = field(default_factory=lambda: [0, 90, 0, 360])
+    home_position: list[float] = field(default_factory=lambda: [0.0, 180.0])
+    fw1_filters: list[str] = field(default_factory=lambda: ["OPEN"] * 9)
+    fw2_filters: list[str] = field(default_factory=lambda: ["OPEN"] * 9)
     shadowband_resolution: float = 0.36
     shadowband_ratio: float = 0.5
-    
+
     @classmethod
     def help(cls) -> str:
         """Return help text for HeadSensorConfig."""
@@ -150,14 +150,14 @@ Default Values:
 Usage:
 ------
   from sciglob.config import HeadSensorConfig, SerialConfig
-  
+
   config = HeadSensorConfig(
       serial=SerialConfig(port='COM3', baudrate=9600),
       tracker_type='LuftBlickTR1',
       motion_limits=[0, 85, 0, 360],
       fw1_filters=['OPEN', 'U340', 'BP300', 'LPNIR', 'ND1', 'ND2', 'ND3', 'ND4', 'OPAQUE'],
   )
-  
+
   from sciglob import HeadSensor
   hs = HeadSensor(config=config)
 """
@@ -166,7 +166,7 @@ Usage:
 @dataclass
 class TemperatureControllerConfig:
     """Configuration for Temperature Controller devices.
-    
+
     Attributes:
         serial: Serial port configuration
         controller_type: 'TETech1' (16-bit) or 'TETech2' (32-bit)
@@ -179,7 +179,7 @@ class TemperatureControllerConfig:
     set_temperature: float = 25.0
     proportional_bandwidth: float = 10.0
     integral_gain: float = 0.5
-    
+
     @classmethod
     def help(cls) -> str:
         """Return help text for TemperatureControllerConfig."""
@@ -211,13 +211,13 @@ Protocol Notes:
 Usage:
 ------
   from sciglob.config import TemperatureControllerConfig, SerialConfig
-  
+
   config = TemperatureControllerConfig(
       serial=SerialConfig(port='COM4'),
       controller_type='TETech2',
       set_temperature=20.0,
   )
-  
+
   from sciglob import TemperatureController
   tc = TemperatureController(config=config)
 """
@@ -226,12 +226,12 @@ Usage:
 @dataclass
 class HumiditySensorConfig:
     """Configuration for Humidity Sensor devices.
-    
+
     Attributes:
         serial: Serial port configuration
     """
     serial: SerialConfig = field(default_factory=SerialConfig)
-    
+
     @classmethod
     def help(cls) -> str:
         """Return help text for HumiditySensorConfig."""
@@ -257,11 +257,11 @@ Data Format:
 Usage:
 ------
   from sciglob.config import HumiditySensorConfig, SerialConfig
-  
+
   config = HumiditySensorConfig(
       serial=SerialConfig(port='COM5', baudrate=9600)
   )
-  
+
   from sciglob import HumiditySensor
   hs = HumiditySensor(config=config)
 """
@@ -270,14 +270,14 @@ Usage:
 @dataclass
 class GPSConfig:
     """Configuration for GPS/Positioning System devices.
-    
+
     Attributes:
         serial: Serial port configuration
         system_type: 'GlobalSat' (GPS only) or 'Novatel' (GPS+Gyro)
     """
     serial: SerialConfig = field(default_factory=SerialConfig)
     system_type: str = "GlobalSat"
-    
+
     @classmethod
     def help(cls) -> str:
         """Return help text for GPSConfig."""
@@ -301,20 +301,20 @@ Output Formats:
 ---------------
   GlobalSat (GPGGA):
     $GPGGA,time,lat,N/S,lon,E/W,quality,satellites,hdop,alt,M,...
-    
+
   Novatel (INSPVA):
     < week seconds lat lon alt vel_n vel_e vel_u roll pitch yaw status
 
 Usage:
 ------
   from sciglob.config import GPSConfig, SerialConfig
-  
+
   # GlobalSat GPS
   config = GPSConfig(
       serial=SerialConfig(port='COM6'),
       system_type='GlobalSat'
   )
-  
+
   # Novatel GPS+Gyro
   config = GPSConfig(
       serial=SerialConfig(port='COM7', baudrate=115200),
@@ -323,12 +323,12 @@ Usage:
 """
 
 
-@dataclass  
+@dataclass
 class HardwareConfig:
     """Complete hardware configuration for all devices.
-    
+
     This class holds configuration for the entire hardware setup.
-    
+
     Attributes:
         head_sensor: Head Sensor configuration
         temperature_controller_1: First temperature controller config
@@ -349,60 +349,60 @@ class HardwareConfig:
     )
     humidity_sensor: HumiditySensorConfig = field(default_factory=HumiditySensorConfig)
     gps: GPSConfig = field(default_factory=GPSConfig)
-    
+
     @classmethod
     def from_yaml(cls, filepath: str) -> 'HardwareConfig':
         """Load configuration from YAML file.
-        
+
         Args:
             filepath: Path to YAML configuration file
-            
+
         Returns:
             HardwareConfig instance
         """
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
         return cls.from_dict(data)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'HardwareConfig':
+    def from_dict(cls, data: dict[str, Any]) -> 'HardwareConfig':
         """Create configuration from dictionary."""
         config = cls()
-        
+
         if 'head_sensor' in data:
             hs = data['head_sensor']
             if 'serial' in hs:
                 config.head_sensor.serial = SerialConfig(**hs['serial'])
-            for key in ['sensor_type', 'tracker_type', 'degrees_per_step', 
+            for key in ['sensor_type', 'tracker_type', 'degrees_per_step',
                        'motion_limits', 'home_position', 'fw1_filters', 'fw2_filters']:
                 if key in hs:
                     setattr(config.head_sensor, key, hs[key])
-        
+
         for tc_key in ['temperature_controller_1', 'temperature_controller_2']:
             if tc_key in data:
                 tc = data[tc_key]
                 tc_config = getattr(config, tc_key)
                 if 'serial' in tc:
                     tc_config.serial = SerialConfig(**tc['serial'])
-                for key in ['controller_type', 'set_temperature', 
+                for key in ['controller_type', 'set_temperature',
                            'proportional_bandwidth', 'integral_gain']:
                     if key in tc:
                         setattr(tc_config, key, tc[key])
-        
+
         if 'humidity_sensor' in data:
             hs = data['humidity_sensor']
             if 'serial' in hs:
                 config.humidity_sensor.serial = SerialConfig(**hs['serial'])
-        
+
         if 'gps' in data:
             gps = data['gps']
             if 'serial' in gps:
                 config.gps.serial = SerialConfig(**gps['serial'])
             if 'system_type' in gps:
                 config.gps.system_type = gps['system_type']
-        
+
         return config
-    
+
     def to_yaml(self, filepath: str) -> None:
         """Save configuration to YAML file."""
         data = {
@@ -434,7 +434,7 @@ class HardwareConfig:
         }
         with open(filepath, 'w') as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-    
+
     @classmethod
     def help(cls) -> str:
         """Return help text for HardwareConfig."""
@@ -448,14 +448,14 @@ Components:
 -----------
   - head_sensor            : Head Sensor with Tracker, Filter Wheels, Shadowband
   - temperature_controller_1: TETech1 temperature controller
-  - temperature_controller_2: TETech2 temperature controller  
+  - temperature_controller_2: TETech2 temperature controller
   - humidity_sensor        : HDC2080EVM humidity sensor
   - gps                    : GPS/Positioning system
 
 Loading from YAML:
 ------------------
   from sciglob.config import HardwareConfig
-  
+
   config = HardwareConfig.from_yaml('my_config.yaml')
 
 Example YAML File:
@@ -467,12 +467,12 @@ Example YAML File:
     tracker_type: LuftBlickTR1
     motion_limits: [0, 90, 0, 360]
     fw1_filters: [OPEN, U340, BP300, LPNIR, ND1, ND2, ND3, ND4, OPAQUE]
-    
+
   temperature_controller_1:
     serial:
       port: COM4
     controller_type: TETech1
-    
+
   gps:
     serial:
       port: COM6
@@ -488,7 +488,7 @@ Saving Configuration:
 
 def print_help(cls_or_instance) -> None:
     """Print help for a configuration class or instance.
-    
+
     Args:
         cls_or_instance: A config class or instance with help() method
     """

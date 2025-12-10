@@ -1,40 +1,42 @@
 """Head Sensor interface for SciGlob instruments."""
 
-from typing import Optional, Dict, Any, List, Union
-import logging
+from typing import TYPE_CHECKING, Any, Optional
+
 from sciglob.core.base import BaseDevice
-from sciglob.core.connection import SerialConnection, parse_response, parse_sensor_value
-from sciglob.core.protocols import (
-    SerialConfig,
-    DeviceType,
-    HEAD_SENSOR_COMMANDS,
-    SENSOR_CONVERSIONS,
-    TIMING_CONFIG,
-    get_error_message,
-)
+
+if TYPE_CHECKING:
+    from sciglob.config import HeadSensorConfig
+from sciglob.core.connection import SerialConnection, parse_sensor_value
 from sciglob.core.exceptions import (
+    CommunicationError,
     ConnectionError,
     DeviceError,
     SensorError,
-    CommunicationError,
 )
 from sciglob.core.help_mixin import HelpMixin
+from sciglob.core.protocols import (
+    HEAD_SENSOR_COMMANDS,
+    SENSOR_CONVERSIONS,
+    TIMING_CONFIG,
+    DeviceType,
+    SerialConfig,
+)
 
 
 class HeadSensor(BaseDevice, HelpMixin):
     """
     Head Sensor interface for SciGlob instruments.
-    
+
     The Head Sensor is the main communication hub that connects to:
     - Tracker (motor controller for azimuth/zenith)
     - Filter Wheels (FW1, FW2)
     - Shadowband
     - Internal sensors (temperature, humidity, pressure)
-    
+
     Supported types:
     - SciGlobHSN1: Basic head sensor
     - SciGlobHSN2: Extended sensors (temp, humidity, pressure)
-    
+
     Example:
         >>> hs = HeadSensor(port="/dev/ttyUSB0")
         >>> hs.connect()
@@ -42,17 +44,17 @@ class HeadSensor(BaseDevice, HelpMixin):
         >>> if hs.sensor_type == "SciGlobHSN2":
         ...     print(f"Temperature: {hs.get_temperature()}°C")
         >>> hs.disconnect()
-    
+
     Using context manager:
         >>> with HeadSensor(port="/dev/ttyUSB0") as hs:
         ...     print(hs.get_status())
-        
+
     Help:
         >>> hs.help()              # Show full help
         >>> hs.help('move_to')     # Help for specific method
         >>> hs.list_methods()      # List all methods
     """
-    
+
     # HelpMixin properties
     _device_name = "HeadSensor"
     _device_description = "Main communication hub for SciGlob instruments"
@@ -91,18 +93,18 @@ class HeadSensor(BaseDevice, HelpMixin):
         timeout: float = 1.0,
         name: str = "HeadSensor",
         sensor_type: Optional[str] = None,
-        fw1_filters: Optional[List[str]] = None,
-        fw2_filters: Optional[List[str]] = None,
+        fw1_filters: Optional[list[str]] = None,
+        fw2_filters: Optional[list[str]] = None,
         tracker_type: str = "Directed Perceptions",
         degrees_per_step: float = 0.01,
-        motion_limits: Optional[List[float]] = None,
-        home_position: Optional[List[float]] = None,
+        motion_limits: Optional[list[float]] = None,
+        home_position: Optional[list[float]] = None,
         config: Optional['HeadSensorConfig'] = None,
         serial_config: Optional[SerialConfig] = None,
     ):
         """
         Initialize the Head Sensor.
-        
+
         Args:
             port: Serial port path (e.g., '/dev/ttyUSB0' or 'COM3')
             baudrate: Communication speed (default 9600)
@@ -130,29 +132,29 @@ class HeadSensor(BaseDevice, HelpMixin):
             degrees_per_step = config.degrees_per_step
             motion_limits = config.motion_limits
             home_position = config.home_position
-        
+
         # If serial_config provided, use its values
         if serial_config is not None:
             port = serial_config.port or port
             baudrate = serial_config.baudrate
             timeout = serial_config.timeout or timeout
-        
+
         super().__init__(port=port, baudrate=baudrate, timeout=timeout, name=name)
-        
+
         self._expected_sensor_type = sensor_type
         self._sensor_type: Optional[str] = None
         self._device_id: Optional[str] = None
-        
+
         # Filter wheel configuration
         self._fw1_filters = fw1_filters or ["OPEN"] * 9
         self._fw2_filters = fw2_filters or ["OPEN"] * 9
-        
+
         # Tracker configuration
         self._tracker_type = tracker_type
         self._degrees_per_step = degrees_per_step
         self._motion_limits = motion_limits or [0, 90, 0, 360]  # [zen_min, zen_max, azi_min, azi_max]
         self._home_position = home_position or [0.0, 180.0]  # [zenith_home, azimuth_home]
-        
+
         # Child device references (lazy initialization)
         self._tracker = None
         self._filter_wheel_1 = None
@@ -180,22 +182,22 @@ class HeadSensor(BaseDevice, HelpMixin):
         return self._degrees_per_step
 
     @property
-    def motion_limits(self) -> List[float]:
+    def motion_limits(self) -> list[float]:
         """Get motion limits [zen_min, zen_max, azi_min, azi_max]."""
         return self._motion_limits.copy()
 
     @property
-    def home_position(self) -> List[float]:
+    def home_position(self) -> list[float]:
         """Get home position [zenith_home, azimuth_home]."""
         return self._home_position.copy()
 
     @property
-    def fw1_filters(self) -> List[str]:
+    def fw1_filters(self) -> list[str]:
         """Get Filter Wheel 1 filter names."""
         return self._fw1_filters.copy()
 
     @property
-    def fw2_filters(self) -> List[str]:
+    def fw2_filters(self) -> list[str]:
         """Get Filter Wheel 2 filter names."""
         return self._fw2_filters.copy()
 
@@ -203,7 +205,7 @@ class HeadSensor(BaseDevice, HelpMixin):
     def tracker(self):
         """
         Get the Tracker interface.
-        
+
         Lazy initialization - creates Tracker on first access.
         """
         if self._tracker is None:
@@ -238,9 +240,9 @@ class HeadSensor(BaseDevice, HelpMixin):
     def connect(self) -> None:
         """
         Connect to the Head Sensor.
-        
+
         Establishes serial connection and queries device identification.
-        
+
         Raises:
             ConnectionError: If connection fails
             DeviceError: If device identification fails
@@ -248,26 +250,26 @@ class HeadSensor(BaseDevice, HelpMixin):
         if self._connected:
             self.logger.warning("Already connected to head sensor")
             return
-            
+
         if self.port is None:
             # Try to auto-detect port
             self.port = self._scan_for_head_sensor()
             if self.port is None:
                 raise ConnectionError("No head sensor found on any port")
-                
+
         try:
             config = SerialConfig(baudrate=self.baudrate)
             self._connection = SerialConnection(port=self.port, config=config)
             self._connection.open()
-            
+
             # Query device identification
             self._query_device_id()
-            
+
             self._connected = True
             self.logger.info(
                 f"Connected to {self._sensor_type} on {self.port}"
             )
-            
+
         except Exception as e:
             self.disconnect()
             raise ConnectionError(f"Failed to connect to head sensor: {e}") from e
@@ -285,19 +287,19 @@ class HeadSensor(BaseDevice, HelpMixin):
     def _query_device_id(self) -> None:
         """Query and parse device identification."""
         protocol = HEAD_SENSOR_COMMANDS["id"]
-        
+
         response = self._connection.query(
             command=protocol.command,
             end_char=protocol.end_char,
             response_end_char=protocol.response_end_char,
             timeout=protocol.timeout,
         )
-        
+
         if not response:
             raise DeviceError("No response to ID query")
-            
+
         self._device_id = response.strip()
-        
+
         # Determine sensor type
         if "SciGlobHSN2" in self._device_id:
             self._sensor_type = DeviceType.SCIGLOB_HSN2.value
@@ -305,7 +307,7 @@ class HeadSensor(BaseDevice, HelpMixin):
             self._sensor_type = DeviceType.SCIGLOB_HSN1.value
         else:
             self._sensor_type = self._device_id
-            
+
         # Validate against expected type if specified
         if self._expected_sensor_type:
             if self._expected_sensor_type not in self._sensor_type:
@@ -332,23 +334,23 @@ class HeadSensor(BaseDevice, HelpMixin):
     def send_command(self, command: str, timeout: Optional[float] = None) -> str:
         """
         Send a command to the Head Sensor.
-        
+
         Args:
             command: Command string (without end character)
             timeout: Response timeout (uses default if None)
-            
+
         Returns:
             Response string
-            
+
         Raises:
             DeviceError: If not connected
             CommunicationError: If command fails
         """
         if not self._connected or self._connection is None:
             raise DeviceError("Not connected to head sensor")
-            
+
         timeout = timeout or self.timeout
-        
+
         try:
             response = self._connection.query(
                 command=command,
@@ -358,28 +360,28 @@ class HeadSensor(BaseDevice, HelpMixin):
             )
             return response
         except Exception as e:
-            raise CommunicationError(f"Command '{command}' failed: {e}")
+            raise CommunicationError(f"Command '{command}' failed: {e}") from e
 
     def get_id(self) -> str:
         """
         Get device identification string.
-        
+
         Returns:
             Device ID string
         """
         if not self._connected:
             raise DeviceError("Not connected")
-            
+
         response = self.send_command("?")
         return response.strip()
 
     def get_temperature(self) -> float:
         """
         Read head sensor temperature (SciGlobHSN2 only).
-        
+
         Returns:
             Temperature in °C
-            
+
         Raises:
             SensorError: If sensor type doesn't support temperature
         """
@@ -387,16 +389,16 @@ class HeadSensor(BaseDevice, HelpMixin):
             raise SensorError(
                 f"Temperature reading not supported on {self._sensor_type}"
             )
-            
+
         protocol = HEAD_SENSOR_COMMANDS["temperature"]
         response = self.send_command(protocol.command)
-        
+
         value = parse_sensor_value(
             response,
             protocol.expected_prefix,
             SENSOR_CONVERSIONS["temperature"]["factor"],
         )
-        
+
         if value is None:
             return SENSOR_CONVERSIONS["temperature"]["error_value"]
         return value
@@ -404,10 +406,10 @@ class HeadSensor(BaseDevice, HelpMixin):
     def get_humidity(self) -> float:
         """
         Read head sensor humidity (SciGlobHSN2 only).
-        
+
         Returns:
             Relative humidity in %
-            
+
         Raises:
             SensorError: If sensor type doesn't support humidity
         """
@@ -415,16 +417,16 @@ class HeadSensor(BaseDevice, HelpMixin):
             raise SensorError(
                 f"Humidity reading not supported on {self._sensor_type}"
             )
-            
+
         protocol = HEAD_SENSOR_COMMANDS["humidity"]
         response = self.send_command(protocol.command)
-        
+
         value = parse_sensor_value(
             response,
             protocol.expected_prefix,
             SENSOR_CONVERSIONS["humidity"]["factor"],
         )
-        
+
         if value is None:
             return SENSOR_CONVERSIONS["humidity"]["error_value"]
         return value
@@ -432,10 +434,10 @@ class HeadSensor(BaseDevice, HelpMixin):
     def get_pressure(self) -> float:
         """
         Read head sensor pressure (SciGlobHSN2 only).
-        
+
         Returns:
             Pressure in mbar
-            
+
         Raises:
             SensorError: If sensor type doesn't support pressure
         """
@@ -443,60 +445,60 @@ class HeadSensor(BaseDevice, HelpMixin):
             raise SensorError(
                 f"Pressure reading not supported on {self._sensor_type}"
             )
-            
+
         protocol = HEAD_SENSOR_COMMANDS["pressure"]
         response = self.send_command(protocol.command)
-        
+
         value = parse_sensor_value(
             response,
             protocol.expected_prefix,
             SENSOR_CONVERSIONS["pressure"]["factor"],
         )
-        
+
         if value is None:
             return SENSOR_CONVERSIONS["pressure"]["error_value"]
         return value
 
-    def get_all_sensors(self) -> Dict[str, float]:
+    def get_all_sensors(self) -> dict[str, float]:
         """
         Read all available sensor values.
-        
+
         Returns:
             Dictionary with sensor readings
         """
         readings = {}
-        
+
         if self._sensor_type == DeviceType.SCIGLOB_HSN2.value:
             try:
                 readings["temperature"] = self.get_temperature()
             except Exception as e:
                 self.logger.error(f"Temperature read failed: {e}")
                 readings["temperature"] = SENSOR_CONVERSIONS["temperature"]["error_value"]
-                
+
             try:
                 readings["humidity"] = self.get_humidity()
             except Exception as e:
                 self.logger.error(f"Humidity read failed: {e}")
                 readings["humidity"] = SENSOR_CONVERSIONS["humidity"]["error_value"]
-                
+
             try:
                 readings["pressure"] = self.get_pressure()
             except Exception as e:
                 self.logger.error(f"Pressure read failed: {e}")
                 readings["pressure"] = SENSOR_CONVERSIONS["pressure"]["error_value"]
-                
+
         return readings
 
     def power_reset(self, device: str) -> bool:
         """
         Power reset a connected device.
-        
+
         Args:
             device: Device identifier:
                 - 'TR' or 'tracker': Tracker
                 - 'S1': Spectrometer 1
                 - 'S2': Spectrometer 2
-                
+
         Returns:
             True if successful
         """
@@ -509,9 +511,9 @@ class HeadSensor(BaseDevice, HelpMixin):
             "spectrometer2": "S2",
             "S2": "S2",
         }
-        
+
         device_id = device_map.get(device, device)
-        
+
         # Send power reset command
         if device_id == "TR":
             response = self.send_command("TRs", timeout=TIMING_CONFIG["power_reset_timeout"])
@@ -521,10 +523,10 @@ class HeadSensor(BaseDevice, HelpMixin):
             response = self.send_command(f"{device_id}s")
             return f"{device_id}0" in response
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Get comprehensive status of the Head Sensor.
-        
+
         Returns:
             Dictionary with status information
         """
@@ -535,9 +537,9 @@ class HeadSensor(BaseDevice, HelpMixin):
             "sensor_type": self._sensor_type,
             "tracker_type": self._tracker_type,
         }
-        
+
         if self._connected and self._sensor_type == DeviceType.SCIGLOB_HSN2.value:
             status["sensors"] = self.get_all_sensors()
-            
+
         return status
 

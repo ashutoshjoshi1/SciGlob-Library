@@ -12,18 +12,34 @@ The design follows the Blick software pattern where:
 
 Quick Start:
     >>> from sciglob.automation import Routine, Schedule, ScheduleExecutor
-    >>> 
+    >>>
     >>> # Create a simple routine
     >>> routine = Routine.from_file("routines/DS.rout")
-    >>> 
+    >>>
     >>> # Create a schedule
     >>> schedule = Schedule.from_file("schedules/daily.sked")
-    >>> 
+    >>>
     >>> # Execute schedule
     >>> executor = ScheduleExecutor(schedule, head_sensor=hs)
     >>> executor.run()
 """
 
+from sciglob.automation.exceptions import (
+    AutomationError,
+    ExecutionError,
+    RoutineError,
+    RoutineNotFoundError,
+    RoutineParseError,
+    ScheduleError,
+    ScheduleParseError,
+    TimingError,
+)
+from sciglob.automation.executor import (
+    ExecutionContext,
+    ExecutionState,
+    RoutineExecutor,
+    ScheduleExecutor,
+)
 from sciglob.automation.routines import (
     Routine,
     RoutineCommand,
@@ -31,7 +47,6 @@ from sciglob.automation.routines import (
     RoutineParameters,
     RoutineReader,
 )
-
 from sciglob.automation.schedules import (
     Schedule,
     ScheduleEntry,
@@ -39,30 +54,11 @@ from sciglob.automation.schedules import (
     ScheduleReader,
     TimeReference,
 )
-
-from sciglob.automation.executor import (
-    RoutineExecutor,
-    ScheduleExecutor,
-    ExecutionContext,
-    ExecutionState,
-)
-
 from sciglob.automation.timing import (
     AstronomicalEvents,
     TimeCalculator,
-    calculate_solar_position,
     calculate_lunar_position,
-)
-
-from sciglob.automation.exceptions import (
-    AutomationError,
-    RoutineError,
-    ScheduleError,
-    ExecutionError,
-    TimingError,
-    RoutineNotFoundError,
-    ScheduleParseError,
-    RoutineParseError,
+    calculate_solar_position,
 )
 
 __all__ = [

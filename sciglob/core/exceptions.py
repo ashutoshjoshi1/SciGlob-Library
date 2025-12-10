@@ -15,7 +15,7 @@ class ConnectionError(SciGlobError):
 
 class CommunicationError(SciGlobError):
     """Raised when communication with a device fails."""
-    
+
     def __init__(self, message: str, error_code: Optional[int] = None):
         super().__init__(message)
         self.error_code = error_code
@@ -23,7 +23,7 @@ class CommunicationError(SciGlobError):
 
 class DeviceError(SciGlobError):
     """Raised when a device operation fails."""
-    
+
     def __init__(self, message: str, error_code: Optional[int] = None):
         super().__init__(message)
         self.error_code = error_code
@@ -80,7 +80,7 @@ class HomingError(MotorError):
 
 class MotorAlarmError(MotorError):
     """Raised when motor reports an alarm condition."""
-    
+
     def __init__(self, message: str, alarm_code: int, axis: str = "motor"):
         super().__init__(message, alarm_code)
         self.alarm_code = alarm_code
@@ -94,7 +94,7 @@ class SensorError(DeviceError):
 
 class RecoveryError(SciGlobError):
     """Raised when recovery attempts are exhausted."""
-    
+
     def __init__(self, message: str, recovery_level: int):
         super().__init__(message)
         self.recovery_level = recovery_level

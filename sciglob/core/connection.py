@@ -1,18 +1,20 @@
 """Serial connection utilities for device communication."""
 
-from typing import Optional, Tuple, List
 import logging
 import time
+from typing import Optional
+
 import serial
 import serial.tools.list_ports
-from sciglob.core.exceptions import ConnectionError, TimeoutError, CommunicationError
-from sciglob.core.protocols import SerialConfig, TIMING_CONFIG
+
+from sciglob.core.exceptions import ConnectionError
+from sciglob.core.protocols import TIMING_CONFIG, SerialConfig
 
 
 class SerialConnection:
     """
     Serial port communication handler.
-    
+
     Implements the question-answer protocol used by SciGlob devices.
     """
 
@@ -23,7 +25,7 @@ class SerialConnection:
     ):
         """
         Initialize serial connection.
-        
+
         Args:
             port: Serial port path (e.g., '/dev/ttyUSB0' or 'COM3')
             config: Serial configuration parameters
@@ -41,17 +43,17 @@ class SerialConnection:
     def open(self) -> None:
         """
         Open the serial connection.
-        
+
         Raises:
             ConnectionError: If the port cannot be opened
         """
         if self.is_open:
             self.logger.warning(f"Port {self.port} is already open")
             return
-            
+
         if self.port is None:
             raise ConnectionError("No port specified")
-            
+
         try:
             self._serial = serial.Serial(
                 port=self.port,
@@ -90,7 +92,7 @@ class SerialConnection:
         """Read all available data from input buffer."""
         if not self.is_open:
             raise ConnectionError("Serial port is not open")
-        
+
         data = b""
         while self._serial.in_waiting > 0:
             data += self._serial.read(self._serial.in_waiting)
@@ -100,37 +102,37 @@ class SerialConnection:
     def write(self, data: bytes) -> int:
         """
         Write data to the serial port.
-        
+
         Args:
             data: Bytes to write
-            
+
         Returns:
             Number of bytes written
         """
         if not self.is_open:
             raise ConnectionError("Serial port is not open")
-            
+
         self.logger.debug(f"TX: {data!r}")
         return self._serial.write(data)
 
     def read(self, size: int = 1, timeout: Optional[float] = None) -> bytes:
         """
         Read data from the serial port.
-        
+
         Args:
             size: Number of bytes to read
             timeout: Read timeout in seconds
-            
+
         Returns:
             Bytes read from port
         """
         if not self.is_open:
             raise ConnectionError("Serial port is not open")
-        
+
         if timeout is not None:
             original_timeout = self._serial.timeout
             self._serial.timeout = timeout
-            
+
         try:
             data = self._serial.read(size)
             self.logger.debug(f"RX: {data!r}")
@@ -147,39 +149,39 @@ class SerialConnection:
     ) -> bytes:
         """
         Read until terminator character or timeout.
-        
+
         Args:
             terminator: End character(s) to look for
             timeout: Maximum time to wait
             max_bytes: Maximum bytes to read
-            
+
         Returns:
             Data read including terminator (if found)
         """
         if not self.is_open:
             raise ConnectionError("Serial port is not open")
-            
+
         start_time = time.time()
         data = b""
-        
+
         while True:
             if time.time() - start_time > timeout:
                 self.logger.debug(f"Read timeout, got: {data!r}")
                 break
-                
+
             if len(data) >= max_bytes:
                 self.logger.warning(f"Max bytes reached: {max_bytes}")
                 break
-                
+
             if self._serial.in_waiting > 0:
                 chunk = self._serial.read(1)
                 data += chunk
-                
+
                 if data.endswith(terminator):
                     break
             else:
                 time.sleep(0.01)
-                
+
         self.logger.debug(f"RX: {data!r}")
         return data
 
@@ -191,7 +193,7 @@ class SerialConnection:
     ) -> None:
         """
         Send a command string.
-        
+
         Args:
             command: Command to send
             end_char: End character to append
@@ -211,29 +213,29 @@ class SerialConnection:
     ) -> str:
         """
         Send command and wait for response.
-        
+
         This implements the standard question-answer protocol.
-        
+
         Args:
             command: Command string
             end_char: Command end character
             response_end_char: Expected response terminator
             timeout: Response timeout
             encoding: String encoding
-            
+
         Returns:
             Response string (stripped of terminator)
         """
         self.send_command(command, end_char, encoding)
-        
+
         # Small delay for device to process
         time.sleep(TIMING_CONFIG["inter_command_delay"])
-        
+
         response = self.read_until(
             terminator=response_end_char.encode(encoding),
             timeout=timeout,
         )
-        
+
         return response.decode(encoding).strip()
 
     def __enter__(self) -> "SerialConnection":
@@ -246,7 +248,7 @@ class SerialConnection:
         self.close()
 
     @staticmethod
-    def list_ports() -> List[str]:
+    def list_ports() -> list[str]:
         """List available serial ports."""
         ports = serial.tools.list_ports.comports()
         return [p.device for p in ports]
@@ -260,13 +262,13 @@ class SerialConnection:
     ) -> Optional[str]:
         """
         Scan available ports for a specific device.
-        
+
         Args:
             id_command: Command to send for identification
             expected_response: Expected substring in response
             baudrate: Baud rate to use
             timeout: Timeout for each port
-            
+
         Returns:
             Port name if found, None otherwise
         """
@@ -275,7 +277,7 @@ class SerialConnection:
                 config = SerialConfig(baudrate=baudrate)
                 conn = SerialConnection(port=port, config=config)
                 conn.open()
-                
+
                 try:
                     response = conn.query(id_command, timeout=timeout)
                     if expected_response is None or expected_response in response:
@@ -283,38 +285,38 @@ class SerialConnection:
                         return port
                 except Exception:
                     pass
-                    
+
                 conn.close()
             except Exception:
                 continue
-                
+
         return None
 
 
 def parse_response(
     response: str,
     expected_prefix: str,
-) -> Tuple[bool, str, Optional[int]]:
+) -> tuple[bool, str, Optional[int]]:
     """
     Parse a device response.
-    
+
     Args:
         response: Raw response string
         expected_prefix: Expected device ID prefix
-        
+
     Returns:
         Tuple of (success, data, error_code)
     """
     if not response:
         return False, "", None
-        
+
     # Check for expected prefix
     if expected_prefix and not response.startswith(expected_prefix):
         return False, response, None
-        
+
     # Extract code/data after prefix
     data = response[len(expected_prefix):]
-    
+
     # Check for success (code 0) or data marker (!)
     if data.startswith("0"):
         return True, data[1:], 0
@@ -330,37 +332,37 @@ def parse_response(
             return False, data[1:], error_code
         except ValueError:
             pass
-            
+
     return True, data, None
 
 
-def parse_position_response(response: str) -> Tuple[Optional[int], Optional[int]]:
+def parse_position_response(response: str) -> tuple[Optional[int], Optional[int]]:
     """
     Parse tracker position response.
-    
+
     Response format: "TRh<azimuth>,<zenith>"
-    
+
     Args:
         response: Response string
-        
+
     Returns:
         Tuple of (azimuth_steps, zenith_steps) or (None, None) on error
     """
     if "TRh" not in response:
         return None, None
-        
+
     try:
         # Extract position part
         pos_str = response.split("TRh")[1].strip()
         parts = pos_str.split(",")
-        
+
         if len(parts) >= 2:
             azimuth = int(parts[0])
             zenith = int(parts[1])
             return azimuth, zenith
     except (ValueError, IndexError):
         pass
-        
+
     return None, None
 
 
@@ -371,22 +373,22 @@ def parse_sensor_value(
 ) -> Optional[float]:
     """
     Parse sensor reading response.
-    
-    Response format: "<prefix>!<value>" 
-    
+
+    Response format: "<prefix>!<value>"
+
     Args:
         response: Response string
         expected_prefix: Expected prefix (e.g., "HT")
         conversion_factor: Factor to divide raw value by
-        
+
     Returns:
         Converted value or None on error
     """
     success, data, error_code = parse_response(response, expected_prefix)
-    
+
     if not success or error_code is not None:
         return None
-        
+
     try:
         raw_value = float(data)
         return raw_value / conversion_factor

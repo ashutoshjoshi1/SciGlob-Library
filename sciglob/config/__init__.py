@@ -11,31 +11,31 @@ Usage:
         GPSConfig,
         HardwareConfig,
     )
-    
+
     # Create serial config
     serial = SerialConfig(port='COM3', baudrate=9600)
-    
+
     # Create head sensor config
     hs_config = HeadSensorConfig(
         serial=serial,
         tracker_type='LuftBlickTR1',
     )
-    
+
     # Load from YAML
     config = HardwareConfig.from_yaml('config.yaml')
 """
 
 from sciglob.config.hardware import (
-    SerialConfig,
-    HeadSensorConfig,
-    TemperatureControllerConfig,
-    HumiditySensorConfig,
-    GPSConfig,
-    HardwareConfig,
-    DEFAULT_SERIAL_CONFIG,
     DEFAULT_HEAD_SENSOR_CONFIG,
+    DEFAULT_SERIAL_CONFIG,
     DEFAULT_TETECH1_CONFIG,
     DEFAULT_TETECH2_CONFIG,
+    GPSConfig,
+    HardwareConfig,
+    HeadSensorConfig,
+    HumiditySensorConfig,
+    SerialConfig,
+    TemperatureControllerConfig,
     print_help,
 )
 

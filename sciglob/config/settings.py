@@ -192,4 +192,3 @@ def load_config(path: Optional[str] = None) -> Settings:
         return Settings.from_yaml(str(path_obj))
     else:
         raise ConfigurationError(f"Unsupported config format: {path_obj.suffix}")
-

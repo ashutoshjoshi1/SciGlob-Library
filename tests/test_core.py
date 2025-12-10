@@ -236,7 +236,7 @@ class TestUtils:
         """Test checksum calculation."""
         # Simple test
         checksum = get_checksum("abc")
-        expected = format((ord('a') + ord('b') + ord('c')) % 256, '02x')
+        expected = format((ord("a") + ord("b") + ord("c")) % 256, "02x")
         assert checksum == expected
 
     def test_parse_hdc2080_humidity(self):
@@ -253,7 +253,7 @@ class TestUtils:
     def test_nmea_to_decimal_north(self):
         """Test NMEA conversion for northern latitude."""
         result = nmea_to_decimal("3859.3500", "N")
-        assert abs(result - (38 + 59.35/60)) < 0.0001
+        assert abs(result - (38 + 59.35 / 60)) < 0.0001
 
     def test_nmea_to_decimal_south(self):
         """Test NMEA conversion for southern latitude."""
@@ -263,7 +263,7 @@ class TestUtils:
     def test_nmea_to_decimal_east(self):
         """Test NMEA conversion for eastern longitude."""
         result = nmea_to_decimal("07652.8949", "E")
-        assert abs(result - (76 + 52.8949/60)) < 0.0001
+        assert abs(result - (76 + 52.8949 / 60)) < 0.0001
 
     def test_nmea_to_decimal_west(self):
         """Test NMEA conversion for western longitude."""
@@ -346,7 +346,7 @@ class TestSerialConnection:
         conn = SerialConnection(port="/dev/ttyUSB0", config=config)
         assert conn.config.baudrate == 115200
 
-    @patch('serial.Serial')
+    @patch("serial.Serial")
     def test_serial_connection_open(self, mock_serial):
         """Test opening serial connection."""
         mock_serial.return_value.is_open = True
@@ -357,7 +357,7 @@ class TestSerialConnection:
         assert conn.is_open is True
         mock_serial.assert_called_once()
 
-    @patch('serial.Serial')
+    @patch("serial.Serial")
     def test_serial_connection_context_manager(self, mock_serial):
         """Test SerialConnection as context manager."""
         mock_serial.return_value.is_open = True
@@ -370,4 +370,3 @@ class TestSerialConnection:
         conn = SerialConnection()
         with pytest.raises(ConnectionError):
             conn.open()
-

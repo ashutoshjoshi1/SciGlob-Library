@@ -24,11 +24,12 @@ logger = logging.getLogger(__name__)
 DEG2RAD = math.pi / 180.0
 RAD2DEG = 180.0 / math.pi
 EARTH_RADIUS_EQUATOR = 6378.5  # in km
-EARTH_RADIUS_POLAR = 6357.0   # in km
+EARTH_RADIUS_POLAR = 6357.0  # in km
 
 
 class Target(Enum):
     """Astronomical targets for positioning."""
+
     SUN = auto()
     MOON = auto()
 
@@ -46,6 +47,7 @@ class SolarPosition:
         right_ascension: Right ascension in degrees
         distance: Earth-Sun distance in AU
     """
+
     zenith_angle: float
     azimuth: float
     hour_angle: float = 0.0
@@ -81,6 +83,7 @@ class LunarPosition:
         illumination: Illuminated fraction (0-1)
         distance: Earth-Moon distance in km
     """
+
     zenith_angle: float
     azimuth: float
     phase: float = 0.0
@@ -110,6 +113,7 @@ class AstronomicalEvents:
         moonrise: UTC datetime of moonrise
         moonset: UTC datetime of moonset
     """
+
     date: datetime
     latitude: float
     longitude: float
@@ -129,7 +133,9 @@ class AstronomicalEvents:
     def __post_init__(self):
         """Build events dictionary."""
         self._events = {
-            "localmidnight": datetime.combine(self.date.date(), datetime.min.time(), tzinfo=timezone.utc),
+            "localmidnight": datetime.combine(
+                self.date.date(), datetime.min.time(), tzinfo=timezone.utc
+            ),
             "localnoon": self.solar_noon,
             "solarzen90am": self.sunrise,
             "solarzen90pm": self.sunset,
@@ -217,19 +223,17 @@ class TimeCalculator:
         dec_rad = sun_coords["declination"] * DEG2RAD
         ha_rad = hour_angle * DEG2RAD
 
-        cos_z = (
-            math.sin(lat_rad) * math.sin(dec_rad) +
-            math.cos(lat_rad) * math.cos(dec_rad) * math.cos(ha_rad)
-        )
+        cos_z = math.sin(lat_rad) * math.sin(dec_rad) + math.cos(lat_rad) * math.cos(
+            dec_rad
+        ) * math.cos(ha_rad)
         cos_z = max(-1, min(1, cos_z))  # Clamp to valid range
         zenith = math.acos(cos_z) * RAD2DEG
 
         # Calculate azimuth
         sin_az = -math.cos(dec_rad) * math.sin(ha_rad)
-        cos_az = (
-            math.sin(dec_rad) * math.cos(lat_rad) -
-            math.cos(dec_rad) * math.sin(lat_rad) * math.cos(ha_rad)
-        )
+        cos_az = math.sin(dec_rad) * math.cos(lat_rad) - math.cos(dec_rad) * math.sin(
+            lat_rad
+        ) * math.cos(ha_rad)
         azimuth = math.atan2(sin_az, cos_az) * RAD2DEG
 
         # Normalize azimuth to 0-360
@@ -289,15 +293,21 @@ class TimeCalculator:
         lon_rad = lon * DEG2RAD
         lat_rad = lat * DEG2RAD
 
-        ra = math.atan2(
-            math.sin(lon_rad) * math.cos(obliquity) - math.tan(lat_rad) * math.sin(obliquity),
-            math.cos(lon_rad)
-        ) * RAD2DEG
+        ra = (
+            math.atan2(
+                math.sin(lon_rad) * math.cos(obliquity) - math.tan(lat_rad) * math.sin(obliquity),
+                math.cos(lon_rad),
+            )
+            * RAD2DEG
+        )
 
-        dec = math.asin(
-            math.sin(lat_rad) * math.cos(obliquity) +
-            math.cos(lat_rad) * math.sin(obliquity) * math.sin(lon_rad)
-        ) * RAD2DEG
+        dec = (
+            math.asin(
+                math.sin(lat_rad) * math.cos(obliquity)
+                + math.cos(lat_rad) * math.sin(obliquity) * math.sin(lon_rad)
+            )
+            * RAD2DEG
+        )
 
         # Calculate hour angle
         gmst = self._greenwich_mean_sidereal_time(jd)
@@ -309,18 +319,16 @@ class TimeCalculator:
         dec_rad = dec * DEG2RAD
         ha_rad = hour_angle * DEG2RAD
 
-        cos_z = (
-            math.sin(lat_rad) * math.sin(dec_rad) +
-            math.cos(lat_rad) * math.cos(dec_rad) * math.cos(ha_rad)
-        )
+        cos_z = math.sin(lat_rad) * math.sin(dec_rad) + math.cos(lat_rad) * math.cos(
+            dec_rad
+        ) * math.cos(ha_rad)
         cos_z = max(-1, min(1, cos_z))
         zenith = math.acos(cos_z) * RAD2DEG
 
         sin_az = -math.cos(dec_rad) * math.sin(ha_rad)
-        cos_az = (
-            math.sin(dec_rad) * math.cos(lat_rad) -
-            math.cos(dec_rad) * math.sin(lat_rad) * math.cos(ha_rad)
-        )
+        cos_az = math.sin(dec_rad) * math.cos(lat_rad) - math.cos(dec_rad) * math.sin(
+            lat_rad
+        ) * math.cos(ha_rad)
         azimuth = math.atan2(sin_az, cos_az) * RAD2DEG
         if azimuth < 0:
             azimuth += 360
@@ -451,11 +459,9 @@ class TimeCalculator:
         # Solar noon occurs when the sun crosses the local meridian
         # Approximation: 12:00 - longitude_offset
         offset_hours = -self.longitude / 15.0
-        noon = datetime.combine(
-            date.date(),
-            datetime.min.time(),
-            tzinfo=timezone.utc
-        ) + timedelta(hours=12 + offset_hours)
+        noon = datetime.combine(date.date(), datetime.min.time(), tzinfo=timezone.utc) + timedelta(
+            hours=12 + offset_hours
+        )
 
         # Refine with equation of time
         jd = self._datetime_to_julian(noon)
@@ -559,4 +565,3 @@ def calculate_lunar_position(
 
     calculator = TimeCalculator(latitude, longitude)
     return calculator.calculate_lunar_position(dt)
-

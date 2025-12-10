@@ -52,21 +52,23 @@ logger = logging.getLogger(__name__)
 
 class TimeReference(Enum):
     """Types of time references for schedule start/end times."""
-    ABSOLUTE = auto()          # HH:MM:SS UTC
-    LOCAL_MIDNIGHT = auto()    # localmidnight
-    LOCAL_NOON = auto()        # localnoon
-    SOLAR_ZEN_90_AM = auto()   # solarzen90am (sunrise)
-    SOLAR_ZEN_90_PM = auto()   # solarzen90pm (sunset)
-    SUNRISE = auto()           # sunrise
-    SUNSET = auto()            # sunset
-    MOON_RISE = auto()         # moonrise
-    MOON_SET = auto()          # moonset
-    THEN = auto()              # After previous sequence
-    UNDEFINED = auto()         # End time not defined
+
+    ABSOLUTE = auto()  # HH:MM:SS UTC
+    LOCAL_MIDNIGHT = auto()  # localmidnight
+    LOCAL_NOON = auto()  # localnoon
+    SOLAR_ZEN_90_AM = auto()  # solarzen90am (sunrise)
+    SOLAR_ZEN_90_PM = auto()  # solarzen90pm (sunset)
+    SUNRISE = auto()  # sunrise
+    SUNSET = auto()  # sunset
+    MOON_RISE = auto()  # moonrise
+    MOON_SET = auto()  # moonset
+    THEN = auto()  # After previous sequence
+    UNDEFINED = auto()  # End time not defined
 
 
 class ScheduleCondition(Enum):
     """Conditional execution criteria for schedule entries."""
+
     NONE = auto()
     MOON_VISIBLE = auto()
     SUN_VISIBLE = auto()
@@ -81,6 +83,7 @@ class ScheduleParameters:
 
     Based on Blick's schedule handling in blick_osparams.py
     """
+
     # Time gap in schedule that triggers tracker parking [seconds]
     parking_gap: float = 20 * 60  # 20 minutes
 
@@ -100,15 +103,25 @@ class ScheduleParameters:
     keyword_separator: str = "->"
 
     # Allowed schedule entry keywords
-    allowed_keywords: list[str] = field(default_factory=lambda: [
-        "label", "start", "end", "refrout", "reftime", "repetitions",
-        "priority", "startwith", "commands", "if"
-    ])
+    allowed_keywords: list[str] = field(
+        default_factory=lambda: [
+            "label",
+            "start",
+            "end",
+            "refrout",
+            "reftime",
+            "repetitions",
+            "priority",
+            "startwith",
+            "commands",
+            "if",
+        ]
+    )
 
     # Required keywords for a valid entry
-    required_keywords: list[str] = field(default_factory=lambda: [
-        "label", "start", "priority", "commands"
-    ])
+    required_keywords: list[str] = field(
+        default_factory=lambda: ["label", "start", "priority", "commands"]
+    )
 
 
 # Global schedule parameters instance
@@ -135,6 +148,7 @@ class ScheduleEntry:
         reference_routine: Routine used for time calculations
         reference_time: "b" (beginning), "m" (middle), or "e" (end) of reference routine
     """
+
     label: str
     start_time_ref: TimeReference
     start_offset: timedelta = field(default_factory=timedelta)
@@ -228,6 +242,7 @@ class Schedule:
         entries: List of schedule entries in order
         source_file: Path to source schedule file
     """
+
     name: str
     entries: list[ScheduleEntry] = field(default_factory=list)
     source_file: Optional[Path] = None
@@ -254,8 +269,7 @@ class Schedule:
         filepath = Path(filepath)
         if not filepath.exists():
             raise ScheduleParseError(
-                f"Schedule file not found: {filepath}",
-                schedule_name=filepath.stem
+                f"Schedule file not found: {filepath}", schedule_name=filepath.stem
             )
 
         reader = ScheduleReader()
@@ -337,8 +351,7 @@ class Schedule:
         for entry in self.entries:
             if entry.end_time_ref == TimeReference.UNDEFINED and entry.repetitions == -1:
                 errors.append(
-                    f"Entry '{entry.label}': Cannot have unlimited repetitions "
-                    "without end time"
+                    f"Entry '{entry.label}': Cannot have unlimited repetitions " "without end time"
                 )
 
         return errors
@@ -377,12 +390,11 @@ class ScheduleReader:
         filepath = Path(filepath)
 
         try:
-            with open(filepath, encoding='utf-8') as f:
+            with open(filepath, encoding="utf-8") as f:
                 lines = f.readlines()
         except OSError as e:
             raise ScheduleParseError(
-                f"Cannot read schedule file: {e}",
-                schedule_name=filepath.stem
+                f"Cannot read schedule file: {e}", schedule_name=filepath.stem
             ) from e
 
         schedule = self.parse_schedule(filepath.stem, lines, routines)
@@ -410,11 +422,11 @@ class ScheduleReader:
         clean_lines = []
         for line in lines:
             line = line.strip()
-            if line and not line.startswith('#'):
+            if line and not line.startswith("#"):
                 clean_lines.append(line)
 
         # Find bracket pairs
-        content = ''.join(clean_lines)
+        content = "".join(clean_lines)
         entries = self._extract_entries(content, name)
 
         # Parse each entry
@@ -427,10 +439,7 @@ class ScheduleReader:
 
                 # Check for duplicate labels
                 if entry.label in labels_seen:
-                    raise ScheduleParseError(
-                        f"Duplicate label '{entry.label}'",
-                        schedule_name=name
-                    )
+                    raise ScheduleParseError(f"Duplicate label '{entry.label}'", schedule_name=name)
                 labels_seen.add(entry.label)
 
                 parsed_entries.append(entry)
@@ -438,15 +447,13 @@ class ScheduleReader:
                 raise
             except Exception as e:
                 raise ScheduleParseError(
-                    f"Error parsing entry {idx + 1}: {e}",
-                    schedule_name=name
+                    f"Error parsing entry {idx + 1}: {e}", schedule_name=name
                 ) from e
 
         # Validate first entry doesn't use THEN
         if parsed_entries and parsed_entries[0].start_time_ref == TimeReference.THEN:
             raise ScheduleParseError(
-                "First entry cannot use 'THEN' as start time",
-                schedule_name=name
+                "First entry cannot use 'THEN' as start time", schedule_name=name
             )
 
         return Schedule(name=name, entries=parsed_entries)
@@ -458,25 +465,24 @@ class ScheduleReader:
         start = -1
 
         for i, char in enumerate(content):
-            if char == '{':
+            if char == "{":
                 if depth == 0:
                     start = i + 1
                 depth += 1
-            elif char == '}':
+            elif char == "}":
                 depth -= 1
                 if depth == 0 and start >= 0:
                     entries.append(content[start:i].strip())
                     start = -1
                 elif depth < 0:
                     raise ScheduleParseError(
-                        "Unmatched closing bracket '}'",
-                        schedule_name=schedule_name
+                        "Unmatched closing bracket '}'", schedule_name=schedule_name
                     )
 
         if depth > 0:
             raise ScheduleParseError(
                 f"Unclosed bracket(s): {depth} opening '{{' without closing '}}'",
-                schedule_name=schedule_name
+                schedule_name=schedule_name,
             )
 
         return entries
@@ -492,7 +498,7 @@ class ScheduleReader:
         content = content.replace("'", "").replace('"', "")
 
         # Split into key-value pairs
-        pairs = content.split(',')
+        pairs = content.split(",")
         entry_dict: dict[str, str] = {}
 
         for pair in pairs:
@@ -501,9 +507,7 @@ class ScheduleReader:
                 continue
 
             if self.params.keyword_separator not in pair:
-                raise ScheduleParseError(
-                    f"Missing '{self.params.keyword_separator}' in '{pair}'"
-                )
+                raise ScheduleParseError(f"Missing '{self.params.keyword_separator}' in '{pair}'")
 
             key, value = pair.split(self.params.keyword_separator, 1)
             key = key.strip().lower()
@@ -551,7 +555,9 @@ class ScheduleReader:
             try:
                 repetitions = int(entry_dict["repetitions"])
             except ValueError as e:
-                raise ScheduleParseError(f"Invalid repetitions value: {entry_dict['repetitions']}") from e
+                raise ScheduleParseError(
+                    f"Invalid repetitions value: {entry_dict['repetitions']}"
+                ) from e
         elif end_ref != TimeReference.UNDEFINED:
             repetitions = -1  # Unlimited until end time
 
@@ -620,13 +626,13 @@ class ScheduleReader:
         offset = timedelta()
 
         # Check for offset (+ or -)
-        offset_match = re.search(r'([+-])(\d{2}):(\d{2})', time_str)
+        offset_match = re.search(r"([+-])(\d{2}):(\d{2})", time_str)
         if offset_match:
-            sign = 1 if offset_match.group(1) == '+' else -1
+            sign = 1 if offset_match.group(1) == "+" else -1
             hours = int(offset_match.group(2))
             minutes = int(offset_match.group(3))
             offset = timedelta(hours=hours * sign, minutes=minutes * sign)
-            time_str = time_str[:offset_match.start()].strip()
+            time_str = time_str[: offset_match.start()].strip()
 
         # Map string to TimeReference
         ref_map = {
@@ -646,7 +652,7 @@ class ScheduleReader:
             return ref_map[time_str], offset
 
         # Check for absolute time (HH:MM:SS or HH:MM)
-        abs_match = re.match(r'(\d{2}):(\d{2})(?::(\d{2}))?$', time_str)
+        abs_match = re.match(r"(\d{2}):(\d{2})(?::(\d{2}))?$", time_str)
         if abs_match:
             hours = int(abs_match.group(1))
             minutes = int(abs_match.group(2))
@@ -681,4 +687,3 @@ class ScheduleReader:
                 raise ScheduleParseError(f"Invalid moonphase condition: {condition_str}") from e
 
         raise ScheduleParseError(f"Unknown condition: {condition_str}")
-

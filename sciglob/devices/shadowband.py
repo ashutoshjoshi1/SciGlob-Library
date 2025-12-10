@@ -210,4 +210,3 @@ class Shadowband(HelpMixin):
             "ratio": self._ratio,
             "position_limits": (self.MIN_POSITION, self.MAX_POSITION),
         }
-

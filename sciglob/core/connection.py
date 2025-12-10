@@ -143,7 +143,7 @@ class SerialConnection:
 
     def read_until(
         self,
-        terminator: bytes = b'\n',
+        terminator: bytes = b"\n",
         timeout: float = 1.0,
         max_bytes: int = 1024,
     ) -> bytes:
@@ -188,8 +188,8 @@ class SerialConnection:
     def send_command(
         self,
         command: str,
-        end_char: str = '\r',
-        encoding: str = 'ascii',
+        end_char: str = "\r",
+        encoding: str = "ascii",
     ) -> None:
         """
         Send a command string.
@@ -206,10 +206,10 @@ class SerialConnection:
     def query(
         self,
         command: str,
-        end_char: str = '\r',
-        response_end_char: str = '\n',
+        end_char: str = "\r",
+        response_end_char: str = "\n",
         timeout: float = 1.0,
-        encoding: str = 'ascii',
+        encoding: str = "ascii",
     ) -> str:
         """
         Send command and wait for response.
@@ -315,7 +315,7 @@ def parse_response(
         return False, response, None
 
     # Extract code/data after prefix
-    data = response[len(expected_prefix):]
+    data = response[len(expected_prefix) :]
 
     # Check for success (code 0) or data marker (!)
     if data.startswith("0"):

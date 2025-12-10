@@ -124,7 +124,7 @@ class HelpMixin:
         """
         methods = []
         for name in dir(self):
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 attr = getattr(self, name)
                 if callable(attr) and not isinstance(attr, type):
                     methods.append(name)
@@ -138,7 +138,7 @@ class HelpMixin:
         """
         props = []
         for name in dir(type(self)):
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 attr = getattr(type(self), name, None)
                 if isinstance(attr, property):
                     props.append(name)
@@ -253,7 +253,8 @@ def show_library_help() -> None:
 
 def show_config_help() -> None:
     """Display configuration help."""
-    print("""
+    print(
+        """
 ================================================================================
                      SciGlob Configuration Help
 ================================================================================
@@ -318,5 +319,5 @@ EXAMPLE YAML:
     system_type: GlobalSat
 
 ================================================================================
-""")
-
+"""
+    )

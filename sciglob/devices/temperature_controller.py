@@ -62,7 +62,7 @@ class TemperatureController(BaseDevice, HelpMixin):
         timeout: float = 1.0,
         name: str = "TempController",
         controller_type: str = "TETech1",
-        config: Optional['TemperatureControllerConfig'] = None,
+        config: Optional["TemperatureControllerConfig"] = None,
         serial_config: Optional[SerialConfig] = None,
     ):
         """
@@ -381,4 +381,3 @@ class TemperatureController(BaseDevice, HelpMixin):
                 status["error"] = str(e)
 
         return status
-

@@ -40,15 +40,15 @@ from sciglob.config.hardware import (
 )
 
 __all__ = [
-    'SerialConfig',
-    'HeadSensorConfig',
-    'TemperatureControllerConfig',
-    'HumiditySensorConfig',
-    'GPSConfig',
-    'HardwareConfig',
-    'DEFAULT_SERIAL_CONFIG',
-    'DEFAULT_HEAD_SENSOR_CONFIG',
-    'DEFAULT_TETECH1_CONFIG',
-    'DEFAULT_TETECH2_CONFIG',
-    'print_help',
+    "SerialConfig",
+    "HeadSensorConfig",
+    "TemperatureControllerConfig",
+    "HumiditySensorConfig",
+    "GPSConfig",
+    "HardwareConfig",
+    "DEFAULT_SERIAL_CONFIG",
+    "DEFAULT_HEAD_SENSOR_CONFIG",
+    "DEFAULT_TETECH1_CONFIG",
+    "DEFAULT_TETECH2_CONFIG",
+    "print_help",
 ]

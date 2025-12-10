@@ -40,7 +40,17 @@ class TestHeadSensorInit:
     def test_filter_wheel_config(self):
         """Test HeadSensor filter wheel configuration."""
         fw1 = ["OPEN", "U340", "BP300", "LPNIR", "ND1", "ND2", "ND3", "ND4", "OPAQUE"]
-        fw2 = ["OPEN", "DIFF", "U340+DIFF", "BP300+DIFF", "LPNIR+DIFF", "ND1", "ND2", "ND3", "OPAQUE"]
+        fw2 = [
+            "OPEN",
+            "DIFF",
+            "U340+DIFF",
+            "BP300+DIFF",
+            "LPNIR+DIFF",
+            "ND1",
+            "ND2",
+            "ND3",
+            "OPAQUE",
+        ]
 
         hs = HeadSensor(fw1_filters=fw1, fw2_filters=fw2)
 
@@ -58,7 +68,7 @@ class TestHeadSensorInit:
 class TestHeadSensorConnection:
     """Tests for HeadSensor connection management."""
 
-    @patch('sciglob.devices.head_sensor.SerialConnection')
+    @patch("sciglob.devices.head_sensor.SerialConnection")
     def test_connect_success(self, mock_serial_class):
         """Test successful connection."""
         mock_conn = MagicMock()
@@ -72,7 +82,7 @@ class TestHeadSensorConnection:
         assert hs.device_id == "SciGlobHSN2"
         assert hs.sensor_type == "SciGlobHSN2"
 
-    @patch('sciglob.devices.head_sensor.SerialConnection')
+    @patch("sciglob.devices.head_sensor.SerialConnection")
     def test_connect_sciglob_hsn1(self, mock_serial_class):
         """Test connection to SciGlobHSN1."""
         mock_conn = MagicMock()
@@ -88,11 +98,11 @@ class TestHeadSensorConnection:
         """Test connection without port raises error."""
         hs = HeadSensor()
 
-        with patch.object(hs, '_scan_for_head_sensor', return_value=None):
+        with patch.object(hs, "_scan_for_head_sensor", return_value=None):
             with pytest.raises(ConnectionError):
                 hs.connect()
 
-    @patch('sciglob.devices.head_sensor.SerialConnection')
+    @patch("sciglob.devices.head_sensor.SerialConnection")
     def test_disconnect(self, mock_serial_class):
         """Test disconnection."""
         mock_conn = MagicMock()
@@ -106,7 +116,7 @@ class TestHeadSensorConnection:
         assert hs.is_connected is False
         mock_conn.close.assert_called_once()
 
-    @patch('sciglob.devices.head_sensor.SerialConnection')
+    @patch("sciglob.devices.head_sensor.SerialConnection")
     def test_context_manager(self, mock_serial_class):
         """Test HeadSensor as context manager."""
         mock_conn = MagicMock()
@@ -167,7 +177,7 @@ class TestHeadSensorSensors:
         connected_hs._connection.query.side_effect = [
             "HT!25000",  # temperature
             "HT!51200",  # humidity
-            "HT!101325", # pressure
+            "HT!101325",  # pressure
         ]
 
         sensors = connected_hs.get_all_sensors()
@@ -283,9 +293,7 @@ class TestHeadSensorStatus:
         hs._sensor_type = "SciGlobHSN2"
         hs._tracker_type = "LuftBlickTR1"
         hs._connection = MagicMock()
-        hs._connection.query.side_effect = [
-            "HT!25000", "HT!51200", "HT!101325"
-        ]
+        hs._connection.query.side_effect = ["HT!25000", "HT!51200", "HT!101325"]
 
         status = hs.get_status()
 
@@ -294,4 +302,3 @@ class TestHeadSensorStatus:
         assert status["sensor_type"] == "SciGlobHSN2"
         assert status["tracker_type"] == "LuftBlickTR1"
         assert "sensors" in status
-

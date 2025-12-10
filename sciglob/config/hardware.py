@@ -30,10 +30,11 @@ class SerialConfig:
         >>> config = SerialConfig(port='COM3', baudrate=9600)
         >>> print(config)
     """
+
     port: Optional[str] = None
     baudrate: int = 9600
     bytesize: int = 8
-    parity: str = 'N'
+    parity: str = "N"
     stopbits: float = 1
     timeout: float = 0
     write_timeout: float = 20.0
@@ -44,16 +45,16 @@ class SerialConfig:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for pyserial."""
         return {
-            'port': self.port,
-            'baudrate': self.baudrate,
-            'bytesize': self.bytesize,
-            'parity': self.parity,
-            'stopbits': self.stopbits,
-            'timeout': self.timeout,
-            'write_timeout': self.write_timeout,
-            'xonxoff': self.xonxoff,
-            'rtscts': self.rtscts,
-            'dsrdtr': self.dsrdtr,
+            "port": self.port,
+            "baudrate": self.baudrate,
+            "bytesize": self.bytesize,
+            "parity": self.parity,
+            "stopbits": self.stopbits,
+            "timeout": self.timeout,
+            "write_timeout": self.write_timeout,
+            "xonxoff": self.xonxoff,
+            "rtscts": self.rtscts,
+            "dsrdtr": self.dsrdtr,
         }
 
     @classmethod
@@ -110,6 +111,7 @@ class HeadSensorConfig:
         shadowband_resolution: Shadowband degrees per step
         shadowband_ratio: Shadowband offset/radius ratio
     """
+
     serial: SerialConfig = field(default_factory=SerialConfig)
     sensor_type: Optional[str] = None
     tracker_type: str = "Directed Perceptions"
@@ -174,6 +176,7 @@ class TemperatureControllerConfig:
         proportional_bandwidth: PID P parameter
         integral_gain: PID I parameter
     """
+
     serial: SerialConfig = field(default_factory=SerialConfig)
     controller_type: str = "TETech1"
     set_temperature: float = 25.0
@@ -230,6 +233,7 @@ class HumiditySensorConfig:
     Attributes:
         serial: Serial port configuration
     """
+
     serial: SerialConfig = field(default_factory=SerialConfig)
 
     @classmethod
@@ -275,6 +279,7 @@ class GPSConfig:
         serial: Serial port configuration
         system_type: 'GlobalSat' (GPS only) or 'Novatel' (GPS+Gyro)
     """
+
     serial: SerialConfig = field(default_factory=SerialConfig)
     system_type: str = "GlobalSat"
 
@@ -336,22 +341,19 @@ class HardwareConfig:
         humidity_sensor: Humidity sensor configuration
         gps: GPS/Positioning system configuration
     """
+
     head_sensor: HeadSensorConfig = field(default_factory=HeadSensorConfig)
     temperature_controller_1: TemperatureControllerConfig = field(
-        default_factory=lambda: TemperatureControllerConfig(
-            controller_type="TETech1"
-        )
+        default_factory=lambda: TemperatureControllerConfig(controller_type="TETech1")
     )
     temperature_controller_2: TemperatureControllerConfig = field(
-        default_factory=lambda: TemperatureControllerConfig(
-            controller_type="TETech2"
-        )
+        default_factory=lambda: TemperatureControllerConfig(controller_type="TETech2")
     )
     humidity_sensor: HumiditySensorConfig = field(default_factory=HumiditySensorConfig)
     gps: GPSConfig = field(default_factory=GPSConfig)
 
     @classmethod
-    def from_yaml(cls, filepath: str) -> 'HardwareConfig':
+    def from_yaml(cls, filepath: str) -> "HardwareConfig":
         """Load configuration from YAML file.
 
         Args:
@@ -365,74 +367,85 @@ class HardwareConfig:
         return cls.from_dict(data)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'HardwareConfig':
+    def from_dict(cls, data: dict[str, Any]) -> "HardwareConfig":
         """Create configuration from dictionary."""
         config = cls()
 
-        if 'head_sensor' in data:
-            hs = data['head_sensor']
-            if 'serial' in hs:
-                config.head_sensor.serial = SerialConfig(**hs['serial'])
-            for key in ['sensor_type', 'tracker_type', 'degrees_per_step',
-                       'motion_limits', 'home_position', 'fw1_filters', 'fw2_filters']:
+        if "head_sensor" in data:
+            hs = data["head_sensor"]
+            if "serial" in hs:
+                config.head_sensor.serial = SerialConfig(**hs["serial"])
+            for key in [
+                "sensor_type",
+                "tracker_type",
+                "degrees_per_step",
+                "motion_limits",
+                "home_position",
+                "fw1_filters",
+                "fw2_filters",
+            ]:
                 if key in hs:
                     setattr(config.head_sensor, key, hs[key])
 
-        for tc_key in ['temperature_controller_1', 'temperature_controller_2']:
+        for tc_key in ["temperature_controller_1", "temperature_controller_2"]:
             if tc_key in data:
                 tc = data[tc_key]
                 tc_config = getattr(config, tc_key)
-                if 'serial' in tc:
-                    tc_config.serial = SerialConfig(**tc['serial'])
-                for key in ['controller_type', 'set_temperature',
-                           'proportional_bandwidth', 'integral_gain']:
+                if "serial" in tc:
+                    tc_config.serial = SerialConfig(**tc["serial"])
+                for key in [
+                    "controller_type",
+                    "set_temperature",
+                    "proportional_bandwidth",
+                    "integral_gain",
+                ]:
                     if key in tc:
                         setattr(tc_config, key, tc[key])
 
-        if 'humidity_sensor' in data:
-            hs = data['humidity_sensor']
-            if 'serial' in hs:
-                config.humidity_sensor.serial = SerialConfig(**hs['serial'])
+        if "humidity_sensor" in data:
+            hs = data["humidity_sensor"]
+            if "serial" in hs:
+                config.humidity_sensor.serial = SerialConfig(**hs["serial"])
 
-        if 'gps' in data:
-            gps = data['gps']
-            if 'serial' in gps:
-                config.gps.serial = SerialConfig(**gps['serial'])
-            if 'system_type' in gps:
-                config.gps.system_type = gps['system_type']
+        if "gps" in data:
+            gps = data["gps"]
+            if "serial" in gps:
+                config.gps.serial = SerialConfig(**gps["serial"])
+            if "system_type" in gps:
+                config.gps.system_type = gps["system_type"]
 
         return config
 
     def to_yaml(self, filepath: str) -> None:
         """Save configuration to YAML file."""
         data = {
-            'head_sensor': {
-                'serial': self.head_sensor.serial.to_dict(),
-                'sensor_type': self.head_sensor.sensor_type,
-                'tracker_type': self.head_sensor.tracker_type,
-                'degrees_per_step': self.head_sensor.degrees_per_step,
-                'motion_limits': self.head_sensor.motion_limits,
-                'home_position': self.head_sensor.home_position,
-                'fw1_filters': self.head_sensor.fw1_filters,
-                'fw2_filters': self.head_sensor.fw2_filters,
+            "head_sensor": {
+                "serial": self.head_sensor.serial.to_dict(),
+                "sensor_type": self.head_sensor.sensor_type,
+                "tracker_type": self.head_sensor.tracker_type,
+                "degrees_per_step": self.head_sensor.degrees_per_step,
+                "motion_limits": self.head_sensor.motion_limits,
+                "home_position": self.head_sensor.home_position,
+                "fw1_filters": self.head_sensor.fw1_filters,
+                "fw2_filters": self.head_sensor.fw2_filters,
             },
-            'temperature_controller_1': {
-                'serial': self.temperature_controller_1.serial.to_dict(),
-                'controller_type': self.temperature_controller_1.controller_type,
+            "temperature_controller_1": {
+                "serial": self.temperature_controller_1.serial.to_dict(),
+                "controller_type": self.temperature_controller_1.controller_type,
             },
-            'temperature_controller_2': {
-                'serial': self.temperature_controller_2.serial.to_dict(),
-                'controller_type': self.temperature_controller_2.controller_type,
+            "temperature_controller_2": {
+                "serial": self.temperature_controller_2.serial.to_dict(),
+                "controller_type": self.temperature_controller_2.controller_type,
             },
-            'humidity_sensor': {
-                'serial': self.humidity_sensor.serial.to_dict(),
+            "humidity_sensor": {
+                "serial": self.humidity_sensor.serial.to_dict(),
             },
-            'gps': {
-                'serial': self.gps.serial.to_dict(),
-                'system_type': self.gps.system_type,
+            "gps": {
+                "serial": self.gps.serial.to_dict(),
+                "system_type": self.gps.system_type,
             },
         }
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
     @classmethod
@@ -492,7 +505,7 @@ def print_help(cls_or_instance) -> None:
     Args:
         cls_or_instance: A config class or instance with help() method
     """
-    if hasattr(cls_or_instance, 'help'):
+    if hasattr(cls_or_instance, "help"):
         print(cls_or_instance.help())
     else:
         print(f"No help available for {type(cls_or_instance)}")
@@ -502,7 +515,7 @@ def print_help(cls_or_instance) -> None:
 DEFAULT_SERIAL_CONFIG = SerialConfig(
     baudrate=9600,
     bytesize=8,
-    parity='N',
+    parity="N",
     stopbits=1,
     timeout=0,
     write_timeout=20.0,
@@ -525,4 +538,3 @@ DEFAULT_TETECH2_CONFIG = TemperatureControllerConfig(
     serial=SerialConfig(baudrate=9600),
     controller_type="TETech2",
 )
-

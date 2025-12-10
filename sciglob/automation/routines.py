@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 class RoutineKeyword(Enum):
     """Valid keywords for routine files."""
+
     DESCRIPTION = auto()
     GETSCRIPT = auto()
     COMMAND = auto()
@@ -68,6 +69,7 @@ class RoutineKeyword(Enum):
 
 class PointingMode(Enum):
     """Pointing modes for tracker positioning."""
+
     ABSOLUTE = "ABS"
     RELATIVE_SUN = "RELSUN"
     RELATIVE_MOON = "RELMOON"
@@ -77,6 +79,7 @@ class PointingMode(Enum):
 
 class ProcessType(Enum):
     """Data processing type indicators."""
+
     ONLY_L1 = "ONLYL1"
     NO_L1 = "NOL1"
     SUN = "SUN"
@@ -96,6 +99,7 @@ class RoutineParameters:
 
     Based on Blick's LoadRoutineParameters() in blick_params.py
     """
+
     # Estimated durations in seconds
     intensity_check_duration: float = 1.0
     filterwheel_change_duration: float = 1.0
@@ -118,16 +122,33 @@ class RoutineParameters:
     max_spectrometers: int = 3
 
     # Valid filters
-    functional_filters: list[str] = field(default_factory=lambda: [
-        "OPEN", "U340", "BP300", "LPNIR"
-    ])
+    functional_filters: list[str] = field(
+        default_factory=lambda: ["OPEN", "U340", "BP300", "LPNIR"]
+    )
 
-    valid_filters: list[str] = field(default_factory=lambda: [
-        "OPAQUE", "OPEN", "U340", "BP300", "LPNIR",
-        "DIFF", "U340+DIFF", "BP300+DIFF", "LPNIR+DIFF",
-        "ND1", "ND2", "ND3", "ND4", "ND5",
-        "DIFF1", "DIFF2", "DIFF3", "DIFF4", "DIFF5",
-    ])
+    valid_filters: list[str] = field(
+        default_factory=lambda: [
+            "OPAQUE",
+            "OPEN",
+            "U340",
+            "BP300",
+            "LPNIR",
+            "DIFF",
+            "U340+DIFF",
+            "BP300+DIFF",
+            "LPNIR+DIFF",
+            "ND1",
+            "ND2",
+            "ND3",
+            "ND4",
+            "ND5",
+            "DIFF1",
+            "DIFF2",
+            "DIFF3",
+            "DIFF4",
+            "DIFF5",
+        ]
+    )
 
     # Routine file extension
     routine_extension: str = ".rout"
@@ -151,6 +172,7 @@ class RoutineCommand:
         raw_line: Original line from routine file
         line_number: Line number in source file
     """
+
     keyword: RoutineKeyword
     subkeywords: dict[str, Any] = field(default_factory=dict)
     raw_line: str = ""
@@ -178,6 +200,7 @@ class Routine:
         commands: List of commands in execution order
         source_file: Path to source routine file
     """
+
     code: str
     description: str = ""
     commands: list[RoutineCommand] = field(default_factory=list)
@@ -188,7 +211,7 @@ class Routine:
         if len(self.code) != 2:
             raise RoutineError(
                 f"Routine code must be exactly 2 characters, got '{self.code}'",
-                routine_code=self.code
+                routine_code=self.code,
             )
         self.code = self.code.upper()
 
@@ -229,9 +252,7 @@ class Routine:
         reader = RoutineReader()
         return reader.parse_routine(code, content.splitlines())
 
-    def get_commands_by_keyword(
-        self, keyword: RoutineKeyword
-    ) -> list[RoutineCommand]:
+    def get_commands_by_keyword(self, keyword: RoutineKeyword) -> list[RoutineCommand]:
         """Get all commands matching a keyword."""
         return [cmd for cmd in self.commands if cmd.keyword == keyword]
 
@@ -287,7 +308,9 @@ class Routine:
             elif cmd.keyword == RoutineKeyword.STOP_LOOP:
                 loop_depth -= 1
                 if loop_depth < 0:
-                    errors.append(f"STOP LOOP without matching START LOOP at line {cmd.line_number}")
+                    errors.append(
+                        f"STOP LOOP without matching START LOOP at line {cmd.line_number}"
+                    )
 
         if loop_depth > 0:
             errors.append(f"Unclosed loop(s): {loop_depth} START LOOP without STOP LOOP")
@@ -303,7 +326,9 @@ class Routine:
                         errors.append("Routine requires head sensor but head sensor not connected")
                 elif cmd.keyword in (RoutineKeyword.SET_SPECTROMETER, RoutineKeyword.MEASURE):
                     if not system_status.get("spectrometer_connected"):
-                        errors.append("Routine requires spectrometer but spectrometer not connected")
+                        errors.append(
+                            "Routine requires spectrometer but spectrometer not connected"
+                        )
 
         return errors
 
@@ -413,17 +438,14 @@ class RoutineReader:
             raise RoutineParseError(
                 f"Invalid routine filename '{filepath.name}'. "
                 "Routine filename must be exactly 2 letters.",
-                routine_code=code
+                routine_code=code,
             )
 
         try:
-            with open(filepath, encoding='utf-8') as f:
+            with open(filepath, encoding="utf-8") as f:
                 lines = f.readlines()
         except OSError as e:
-            raise RoutineParseError(
-                f"Cannot read routine file: {e}",
-                routine_code=code
-            ) from e
+            raise RoutineParseError(f"Cannot read routine file: {e}", routine_code=code) from e
 
         routine = self.parse_routine(code, lines)
         routine.source_file = filepath
@@ -448,7 +470,7 @@ class RoutineReader:
             line = line.strip()
 
             # Skip empty lines and comments
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
             try:
@@ -465,17 +487,10 @@ class RoutineReader:
                         commands.append(cmd)
             except Exception as e:
                 raise RoutineParseError(
-                    str(e),
-                    routine_code=code,
-                    line_number=line_num,
-                    line_content=line
+                    str(e), routine_code=code, line_number=line_num, line_content=line
                 ) from e
 
-        return Routine(
-            code=code,
-            description=description,
-            commands=commands
-        )
+        return Routine(code=code, description=description, commands=commands)
 
     def _parse_line(self, line: str, line_num: int) -> Optional[RoutineCommand]:
         """Parse a single line from a routine file."""
@@ -517,15 +532,10 @@ class RoutineReader:
                 subkeywords[key] = default_value
 
         return RoutineCommand(
-            keyword=keyword,
-            subkeywords=subkeywords,
-            raw_line=line,
-            line_number=line_num
+            keyword=keyword, subkeywords=subkeywords, raw_line=line, line_number=line_num
         )
 
-    def _parse_subkeywords(
-        self, keyword: RoutineKeyword, value_str: str
-    ) -> dict[str, Any]:
+    def _parse_subkeywords(self, keyword: RoutineKeyword, value_str: str) -> dict[str, Any]:
         """Parse subkeyword-value pairs from a string."""
         subkeywords = {}
 
@@ -539,9 +549,7 @@ class RoutineReader:
 
             # Split on value separator
             if self.params.value_separator not in pair:
-                raise RoutineParseError(
-                    f"Missing '{self.params.value_separator}' in '{pair}'"
-                )
+                raise RoutineParseError(f"Missing '{self.params.value_separator}' in '{pair}'")
 
             key, value = pair.split(self.params.value_separator, 1)
             key = key.strip().upper()
@@ -573,8 +581,8 @@ class RoutineReader:
             pass
 
         # Check for list (comma-separated values)
-        if ',' in value:
-            parts = [self._convert_value(p.strip()) for p in value.split(',')]
+        if "," in value:
+            parts = [self._convert_value(p.strip()) for p in value.split(",")]
             return parts
 
         # Keep as string
@@ -600,7 +608,7 @@ class RoutineReader:
             return True, 0
 
         # Check for XIJ(n) format
-        match = re.match(r'\((\d+)\)', remainder)
+        match = re.match(r"\((\d+)\)", remainder)
         if match:
             return True, int(match.group(1)) - 1
 
@@ -638,7 +646,7 @@ def decompose_routine_string(
             raise RoutineParseError(f"Incomplete routine code at position {i}")
 
         # Extract two-letter code
-        code = routine_string[i:i+2]
+        code = routine_string[i : i + 2]
         i += 2
 
         # Validate if routines list provided
@@ -657,13 +665,10 @@ def decompose_routine_string(
         if rep_str:
             repetitions = int(rep_str)
             if not repeatable and repetitions > 1:
-                raise RoutineParseError(
-                    f"Repetitions not allowed for routine '{code}'"
-                )
+                raise RoutineParseError(f"Repetitions not allowed for routine '{code}'")
 
         # Add to result (with time indices placeholder)
         for _ in range(repetitions):
             result.append((code, [0, 0, 0]))
 
     return result
-

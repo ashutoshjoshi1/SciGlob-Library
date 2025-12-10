@@ -67,19 +67,13 @@ class TestTemperatureController:
 
     def test_init_tetech1(self):
         """Test TETech1 initialization."""
-        tc = TemperatureController(
-            port="/dev/ttyUSB0",
-            controller_type="TETech1"
-        )
+        tc = TemperatureController(port="/dev/ttyUSB0", controller_type="TETech1")
         assert tc.controller_type == "TETech1"
         assert tc.nbits == 16
 
     def test_init_tetech2(self):
         """Test TETech2 initialization."""
-        tc = TemperatureController(
-            port="/dev/ttyUSB0",
-            controller_type="TETech2"
-        )
+        tc = TemperatureController(port="/dev/ttyUSB0", controller_type="TETech2")
         assert tc.controller_type == "TETech2"
         assert tc.nbits == 32
 
@@ -88,7 +82,7 @@ class TestTemperatureController:
         with pytest.raises(ValueError):
             TemperatureController(controller_type="Invalid")
 
-    @patch('sciglob.devices.temperature_controller.SerialConnection')
+    @patch("sciglob.devices.temperature_controller.SerialConnection")
     def test_connect(self, mock_serial_class):
         """Test connection."""
         mock_conn = MagicMock()
@@ -145,13 +139,13 @@ class TestHumiditySensor:
         assert hs.is_connected is False
         assert hs.is_initialized is False
 
-    @patch('sciglob.devices.humidity_sensor.SerialConnection')
+    @patch("sciglob.devices.humidity_sensor.SerialConnection")
     def test_connect(self, mock_serial_class):
         """Test connection."""
         mock_conn = MagicMock()
         mock_conn.read_until.side_effect = [
             b"S,HDC2080EVM,part,\r\n",  # ID response
-            b"stream stop\r\n",          # Initialize response
+            b"stream stop\r\n",  # Initialize response
         ]
         mock_serial_class.return_value = mock_conn
 
@@ -317,4 +311,3 @@ class TestDeviceIntegration:
         # Test filter wheel operations
         fw1.set_position(2)
         assert fw1.position == 2
-

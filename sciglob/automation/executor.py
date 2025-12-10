@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 class ExecutionState(Enum):
     """Current state of execution."""
+
     IDLE = auto()
     RUNNING = auto()
     PAUSED = auto()
@@ -70,6 +71,7 @@ class ExecutionContext:
         location: Location information for astronomical calculations
         events: Astronomical events for current day
     """
+
     state: ExecutionState = ExecutionState.IDLE
     current_routine: Optional[str] = None
     current_command: Optional[RoutineCommand] = None
@@ -126,11 +128,13 @@ class ExecutionContext:
         current_index: int = 0,
     ) -> None:
         """Push a new loop onto the stack."""
-        self.loop_stack.append({
-            "values": values,
-            "index": current_index,
-            "iteration": 0,
-        })
+        self.loop_stack.append(
+            {
+                "values": values,
+                "index": current_index,
+                "iteration": 0,
+            }
+        )
 
     def pop_loop(self) -> Optional[dict[str, Any]]:
         """Pop loop from stack, returns None if empty."""
@@ -546,15 +550,15 @@ class RoutineExecutor:
         if fw1 != "CURRENT" and fw1 != "XXX":
             try:
                 if fw1 == "RESET":
-                    if hasattr(head_sensor, 'filter_wheel_1'):
+                    if hasattr(head_sensor, "filter_wheel_1"):
                         head_sensor.filter_wheel_1.home()
                 elif isinstance(fw1, int):
-                    if hasattr(head_sensor, 'filter_wheel_1'):
+                    if hasattr(head_sensor, "filter_wheel_1"):
                         head_sensor.filter_wheel_1.set_position(fw1)
                     self.context.filter_wheel_1_position = fw1
                 else:
                     # Filter name
-                    if hasattr(head_sensor, 'filter_wheel_1'):
+                    if hasattr(head_sensor, "filter_wheel_1"):
                         head_sensor.filter_wheel_1.set_filter(fw1)
             except Exception as e:
                 logger.error(f"Filter wheel 1 error: {e}")
@@ -563,14 +567,14 @@ class RoutineExecutor:
         if fw2 != "CURRENT" and fw2 != "XXX":
             try:
                 if fw2 == "RESET":
-                    if hasattr(head_sensor, 'filter_wheel_2'):
+                    if hasattr(head_sensor, "filter_wheel_2"):
                         head_sensor.filter_wheel_2.home()
                 elif isinstance(fw2, int):
-                    if hasattr(head_sensor, 'filter_wheel_2'):
+                    if hasattr(head_sensor, "filter_wheel_2"):
                         head_sensor.filter_wheel_2.set_position(fw2)
                     self.context.filter_wheel_2_position = fw2
                 else:
-                    if hasattr(head_sensor, 'filter_wheel_2'):
+                    if hasattr(head_sensor, "filter_wheel_2"):
                         head_sensor.filter_wheel_2.set_filter(fw2)
             except Exception as e:
                 logger.error(f"Filter wheel 2 error: {e}")
@@ -578,7 +582,7 @@ class RoutineExecutor:
     def _execute_set_shadowband(self, command: RoutineCommand) -> None:
         """Execute SET SHADOWBAND command."""
         head_sensor = self.context.hardware.get("head_sensor")
-        if not head_sensor or not hasattr(head_sensor, 'shadowband'):
+        if not head_sensor or not hasattr(head_sensor, "shadowband"):
             logger.warning("SET SHADOWBAND: No shadowband available")
             return
 
@@ -629,7 +633,9 @@ class RoutineExecutor:
 
         # This would typically trigger actual measurement
         # For now, just log and emit event
-        logger.debug(f"Measurement #{self.context.measurement_count}: display={display}, save={save}")
+        logger.debug(
+            f"Measurement #{self.context.measurement_count}: display={display}, save={save}"
+        )
 
         measurement_data = {
             "count": self.context.measurement_count,
@@ -674,7 +680,8 @@ class RoutineExecutor:
                     index = 0
                 else:
                     import re
-                    match = re.match(r'XIJ\((\d+)\)', value)
+
+                    match = re.match(r"XIJ\((\d+)\)", value)
                     if match:
                         index = int(match.group(1)) - 1
                     else:
@@ -842,9 +849,7 @@ class ScheduleExecutor:
         if ref == TimeReference.ABSOLUTE:
             # Offset contains the absolute time of day
             base_time = datetime.combine(
-                self._events.date.date(),
-                datetime.min.time(),
-                tzinfo=timezone.utc
+                self._events.date.date(), datetime.min.time(), tzinfo=timezone.utc
             )
             return base_time + offset
 
@@ -919,7 +924,7 @@ class ScheduleExecutor:
             # Get sorted entries by start time
             entries = sorted(
                 self.schedule.entries,
-                key=lambda e: e.computed_start or datetime.max.replace(tzinfo=timezone.utc)
+                key=lambda e: e.computed_start or datetime.max.replace(tzinfo=timezone.utc),
             )
 
             for entry in entries:
@@ -1013,4 +1018,3 @@ class ScheduleExecutor:
         finally:
             self._emit_event("on_entry_complete", entry=entry)
             self._current_entry = None
-

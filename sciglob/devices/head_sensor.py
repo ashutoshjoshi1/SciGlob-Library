@@ -99,7 +99,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         degrees_per_step: float = 0.01,
         motion_limits: Optional[list[float]] = None,
         home_position: Optional[list[float]] = None,
-        config: Optional['HeadSensorConfig'] = None,
+        config: Optional["HeadSensorConfig"] = None,
         serial_config: Optional[SerialConfig] = None,
     ):
         """
@@ -152,7 +152,12 @@ class HeadSensor(BaseDevice, HelpMixin):
         # Tracker configuration
         self._tracker_type = tracker_type
         self._degrees_per_step = degrees_per_step
-        self._motion_limits = motion_limits or [0, 90, 0, 360]  # [zen_min, zen_max, azi_min, azi_max]
+        self._motion_limits = motion_limits or [
+            0,
+            90,
+            0,
+            360,
+        ]  # [zen_min, zen_max, azi_min, azi_max]
         self._home_position = home_position or [0.0, 180.0]  # [zenith_home, azimuth_home]
 
         # Child device references (lazy initialization)
@@ -210,6 +215,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         """
         if self._tracker is None:
             from sciglob.devices.tracker import Tracker
+
             self._tracker = Tracker(self)
         return self._tracker
 
@@ -218,6 +224,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         """Get Filter Wheel 1 interface."""
         if self._filter_wheel_1 is None:
             from sciglob.devices.filter_wheel import FilterWheel
+
             self._filter_wheel_1 = FilterWheel(self, wheel_id=1)
         return self._filter_wheel_1
 
@@ -226,6 +233,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         """Get Filter Wheel 2 interface."""
         if self._filter_wheel_2 is None:
             from sciglob.devices.filter_wheel import FilterWheel
+
             self._filter_wheel_2 = FilterWheel(self, wheel_id=2)
         return self._filter_wheel_2
 
@@ -234,6 +242,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         """Get Shadowband interface."""
         if self._shadowband is None:
             from sciglob.devices.shadowband import Shadowband
+
             self._shadowband = Shadowband(self)
         return self._shadowband
 
@@ -266,9 +275,7 @@ class HeadSensor(BaseDevice, HelpMixin):
             self._query_device_id()
 
             self._connected = True
-            self.logger.info(
-                f"Connected to {self._sensor_type} on {self.port}"
-            )
+            self.logger.info(f"Connected to {self._sensor_type} on {self.port}")
 
         except Exception as e:
             self.disconnect()
@@ -311,9 +318,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         # Validate against expected type if specified
         if self._expected_sensor_type:
             if self._expected_sensor_type not in self._sensor_type:
-                raise DeviceError(
-                    f"Expected {self._expected_sensor_type}, got {self._sensor_type}"
-                )
+                raise DeviceError(f"Expected {self._expected_sensor_type}, got {self._sensor_type}")
 
     def disconnect(self) -> None:
         """Disconnect from the Head Sensor."""
@@ -386,9 +391,7 @@ class HeadSensor(BaseDevice, HelpMixin):
             SensorError: If sensor type doesn't support temperature
         """
         if self._sensor_type != DeviceType.SCIGLOB_HSN2.value:
-            raise SensorError(
-                f"Temperature reading not supported on {self._sensor_type}"
-            )
+            raise SensorError(f"Temperature reading not supported on {self._sensor_type}")
 
         protocol = HEAD_SENSOR_COMMANDS["temperature"]
         response = self.send_command(protocol.command)
@@ -414,9 +417,7 @@ class HeadSensor(BaseDevice, HelpMixin):
             SensorError: If sensor type doesn't support humidity
         """
         if self._sensor_type != DeviceType.SCIGLOB_HSN2.value:
-            raise SensorError(
-                f"Humidity reading not supported on {self._sensor_type}"
-            )
+            raise SensorError(f"Humidity reading not supported on {self._sensor_type}")
 
         protocol = HEAD_SENSOR_COMMANDS["humidity"]
         response = self.send_command(protocol.command)
@@ -442,9 +443,7 @@ class HeadSensor(BaseDevice, HelpMixin):
             SensorError: If sensor type doesn't support pressure
         """
         if self._sensor_type != DeviceType.SCIGLOB_HSN2.value:
-            raise SensorError(
-                f"Pressure reading not supported on {self._sensor_type}"
-            )
+            raise SensorError(f"Pressure reading not supported on {self._sensor_type}")
 
         protocol = HEAD_SENSOR_COMMANDS["pressure"]
         response = self.send_command(protocol.command)
@@ -542,4 +541,3 @@ class HeadSensor(BaseDevice, HelpMixin):
             status["sensors"] = self.get_all_sensors()
 
         return status
-

@@ -569,4 +569,3 @@ class Tracker(HelpMixin):
                 status["motor_alarms"] = {"error": str(e)}
 
         return status
-

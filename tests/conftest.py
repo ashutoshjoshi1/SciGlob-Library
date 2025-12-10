@@ -42,7 +42,17 @@ def mock_head_sensor():
     mock.motion_limits = [0, 90, 0, 360]
     mock.home_position = [0.0, 180.0]
     mock.fw1_filters = ["OPEN", "U340", "BP300", "LPNIR", "ND1", "ND2", "ND3", "ND4", "OPAQUE"]
-    mock.fw2_filters = ["OPEN", "DIFF", "U340+DIFF", "BP300+DIFF", "LPNIR+DIFF", "ND1", "ND2", "ND3", "OPAQUE"]
+    mock.fw2_filters = [
+        "OPEN",
+        "DIFF",
+        "U340+DIFF",
+        "BP300+DIFF",
+        "LPNIR+DIFF",
+        "ND1",
+        "ND2",
+        "ND3",
+        "OPAQUE",
+    ]
 
     # Mock send_command to return success responses
     def mock_send_command(cmd, timeout=None):
@@ -74,6 +84,7 @@ def mock_head_sensor():
 def tracker(mock_head_sensor):
     """Create a Tracker instance for testing."""
     from sciglob.devices.tracker import Tracker
+
     return Tracker(mock_head_sensor)
 
 
@@ -81,6 +92,7 @@ def tracker(mock_head_sensor):
 def filter_wheel_1(mock_head_sensor):
     """Create a FilterWheel instance for testing (FW1)."""
     from sciglob.devices.filter_wheel import FilterWheel
+
     return FilterWheel(mock_head_sensor, wheel_id=1)
 
 
@@ -88,6 +100,7 @@ def filter_wheel_1(mock_head_sensor):
 def filter_wheel_2(mock_head_sensor):
     """Create a FilterWheel instance for testing (FW2)."""
     from sciglob.devices.filter_wheel import FilterWheel
+
     return FilterWheel(mock_head_sensor, wheel_id=2)
 
 
@@ -95,4 +108,5 @@ def filter_wheel_2(mock_head_sensor):
 def shadowband(mock_head_sensor):
     """Create a Shadowband instance for testing."""
     from sciglob.devices.shadowband import Shadowband
+
     return Shadowband(mock_head_sensor)

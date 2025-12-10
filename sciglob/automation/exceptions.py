@@ -7,6 +7,7 @@ from sciglob.core.exceptions import SciGlobError
 
 class AutomationError(SciGlobError):
     """Base exception for all automation errors."""
+
     pass
 
 
@@ -151,4 +152,3 @@ class SaturationError(ExecutionError):
         super().__init__(message)
         self.saturation_count = saturation_count
         self.max_allowed = max_allowed
-

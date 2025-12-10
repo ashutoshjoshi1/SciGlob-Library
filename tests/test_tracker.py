@@ -119,4 +119,3 @@ class TestTracker:
         assert "tracker_type" in status
         assert "degrees_per_step" in status
         assert "home_position" in status
-

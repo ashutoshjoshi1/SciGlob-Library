@@ -5,11 +5,13 @@ from typing import Optional
 
 class SciGlobError(Exception):
     """Base exception for all SciGlob errors."""
+
     pass
 
 
 class ConnectionError(SciGlobError):
     """Raised when a connection to a device fails."""
+
     pass
 
 
@@ -31,26 +33,31 @@ class DeviceError(SciGlobError):
 
 class TimeoutError(SciGlobError):
     """Raised when an operation times out."""
+
     pass
 
 
 class ConfigurationError(SciGlobError):
     """Raised when there's a configuration error."""
+
     pass
 
 
 class TrackerError(DeviceError):
     """Raised when a tracker operation fails."""
+
     pass
 
 
 class MotorError(DeviceError):
     """Raised when a motor operation fails."""
+
     pass
 
 
 class FilterWheelError(DeviceError):
     """Raised when a filter wheel operation fails."""
+
     pass
 
 
@@ -68,13 +75,12 @@ class PositionError(MotorError):
         self.min_pos = min_pos
         self.max_pos = max_pos
         self.axis = axis
-        super().__init__(
-            f"{axis} {position} is out of range [{min_pos}, {max_pos}]"
-        )
+        super().__init__(f"{axis} {position} is out of range [{min_pos}, {max_pos}]")
 
 
 class HomingError(MotorError):
     """Raised when homing operation fails."""
+
     pass
 
 
@@ -89,6 +95,7 @@ class MotorAlarmError(MotorError):
 
 class SensorError(DeviceError):
     """Raised when a sensor reading fails."""
+
     pass
 
 
@@ -102,9 +109,11 @@ class RecoveryError(SciGlobError):
 
 class SpectrometerError(DeviceError):
     """Raised when a spectrometer operation fails."""
+
     pass
 
 
 class CameraError(DeviceError):
     """Raised when a camera operation fails."""
+
     pass

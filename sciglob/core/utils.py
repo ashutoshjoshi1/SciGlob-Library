@@ -74,9 +74,7 @@ def validate_angle(
 
     if angle < min_angle or angle > max_angle:
         if not wrap:
-            raise ValueError(
-                f"Angle {angle} is out of range [{min_angle}, {max_angle}]"
-            )
+            raise ValueError(f"Angle {angle} is out of range [{min_angle}, {max_angle}]")
 
     return angle
 
@@ -122,11 +120,9 @@ def calculate_angular_distance(
     azi2_rad = math.radians(azi2)
 
     # Spherical law of cosines
-    cos_dist = (
-        math.sin(zen1_rad) * math.sin(zen2_rad) *
-        math.cos(azi1_rad - azi2_rad) +
-        math.cos(zen1_rad) * math.cos(zen2_rad)
-    )
+    cos_dist = math.sin(zen1_rad) * math.sin(zen2_rad) * math.cos(azi1_rad - azi2_rad) + math.cos(
+        zen1_rad
+    ) * math.cos(zen2_rad)
 
     # Clamp to valid range
     cos_dist = max(-1.0, min(1.0, cos_dist))
@@ -176,13 +172,13 @@ def dec2hex(value: int, nbits: int = 16) -> str:
     Returns:
         Hex string padded to nbits/4 characters
     """
-    vmax = 2 ** nbits
+    vmax = 2**nbits
     nchar = nbits // 4
 
     if value < 0:
-        hex_value = format((vmax + value) & (vmax - 1), 'x')
+        hex_value = format((vmax + value) & (vmax - 1), "x")
     else:
-        hex_value = format(abs(value), 'x')
+        hex_value = format(abs(value), "x")
 
     return hex_value.zfill(nchar)
 
@@ -204,7 +200,7 @@ def hex2dec(hex_string: str, nbits: int = 16) -> int:
 
     # Check if negative (first nibble > 7)
     if len(hex_string) > 0 and int(hex_string[0], 16) > 7:
-        value = value - (2 ** nbits)
+        value = value - (2**nbits)
 
     return value
 
@@ -222,7 +218,7 @@ def get_checksum(hex_string: str) -> str:
         2-character hex checksum
     """
     total = sum(ord(c) for c in hex_string)
-    return format(total % 256, '02x')
+    return format(total % 256, "02x")
 
 
 def parse_hdc2080_humidity(hex_response: str) -> float:
@@ -283,7 +279,7 @@ def nmea_to_decimal(coord: str, direction: str) -> float:
         return 0.0
 
     # Split degrees and minutes
-    if direction in ['N', 'S']:
+    if direction in ["N", "S"]:
         degrees = float(coord[:2])
         minutes = float(coord[2:])
     else:  # E, W
@@ -292,7 +288,7 @@ def nmea_to_decimal(coord: str, direction: str) -> float:
 
     decimal = degrees + minutes / 60.0
 
-    if direction in ['S', 'W']:
+    if direction in ["S", "W"]:
         decimal = -decimal
 
     return decimal
@@ -314,9 +310,7 @@ def shadowband_angle_to_position(
     Returns:
         Step position (integer)
     """
-    delta = math.degrees(
-        math.asin(math.sin(math.radians(angle_deg)) * ratio)
-    )
+    delta = math.degrees(math.asin(math.sin(math.radians(angle_deg)) * ratio))
     alfa = angle_deg - delta
     return int(round((alfa + 90) / resolution))
 
@@ -350,4 +344,3 @@ def position_to_shadowband_angle(
         sbangle -= 360
 
     return sbangle
-

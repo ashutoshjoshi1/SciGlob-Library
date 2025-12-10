@@ -55,7 +55,7 @@ class HumiditySensor(BaseDevice, HelpMixin):
         baudrate: int = 9600,
         timeout: float = 1.0,
         name: str = "HumiditySensor",
-        config: Optional['HumiditySensorConfig'] = None,
+        config: Optional["HumiditySensorConfig"] = None,
         serial_config: Optional[SerialConfig] = None,
     ):
         """
@@ -258,4 +258,3 @@ class HumiditySensor(BaseDevice, HelpMixin):
                 status["error"] = str(e)
 
         return status
-

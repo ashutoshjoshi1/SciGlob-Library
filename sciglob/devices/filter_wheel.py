@@ -276,4 +276,3 @@ class FilterWheel(HelpMixin):
     def __repr__(self) -> str:
         current = self.current_filter or "Unknown"
         return f"<FilterWheel{self._wheel_id}(position={self._position}, filter={current})>"
-

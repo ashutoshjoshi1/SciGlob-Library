@@ -92,4 +92,3 @@ class BaseDevice(ABC):
     def __repr__(self) -> str:
         status = "connected" if self._connected else "disconnected"
         return f"<{self.name}(port={self.port}, {status})>"
-

@@ -83,7 +83,7 @@ class GlobalSatGPS(PositioningSystem):
         baudrate: int = 9600,
         timeout: float = 2.0,
         name: str = "GlobalSatGPS",
-        config: Optional['GPSConfig'] = None,
+        config: Optional["GPSConfig"] = None,
         serial_config: Optional[SerialConfig] = None,
     ):
         """
@@ -186,6 +186,7 @@ class GlobalSatGPS(PositioningSystem):
                 self._connection.send_command(cmd + "\r\n", end_char="")
                 # Small delay between commands
                 import time
+
                 time.sleep(0.2)
 
             self._configured = True
@@ -217,6 +218,7 @@ class GlobalSatGPS(PositioningSystem):
 
         # Read response
         import time
+
         time.sleep(1.0)
 
         response = self._connection.read_until(
@@ -253,7 +255,7 @@ class GlobalSatGPS(PositioningSystem):
 
             # Remove checksum
             if "*" in gga_line:
-                gga_line = gga_line[:gga_line.index("*")]
+                gga_line = gga_line[: gga_line.index("*")]
 
             parts = gga_line.split(",")
 
@@ -342,7 +344,7 @@ class NovatelGPS(PositioningSystem):
         baudrate: int = 9600,
         timeout: float = 2.0,
         name: str = "NovatelGPS",
-        config: Optional['GPSConfig'] = None,
+        config: Optional["GPSConfig"] = None,
         serial_config: Optional[SerialConfig] = None,
     ):
         """
@@ -497,6 +499,7 @@ class NovatelGPS(PositioningSystem):
 
             # Wait for INSPVA data
             import time
+
             time.sleep(0.5)
 
             # Read additional data
@@ -632,4 +635,3 @@ class NovatelGPS(PositioningSystem):
                 status["error"] = str(e)
 
         return status
-

@@ -6,6 +6,7 @@ from enum import Enum, IntEnum
 
 class DeviceType(str, Enum):
     """Supported device types."""
+
     SCIGLOB_HSN1 = "SciGlobHSN1"
     SCIGLOB_HSN2 = "SciGlobHSN2"
     LUFTBLICK_TR1 = "LuftBlickTR1"
@@ -19,6 +20,7 @@ class DeviceType(str, Enum):
 
 class ErrorCode(IntEnum):
     """Standard error codes."""
+
     OK = 0
     MEMORY_READ_ERROR = 1
     WRONG_TRACKER_ECHO = 2
@@ -34,6 +36,7 @@ class ErrorCode(IntEnum):
 
 class MotorAlarmCode(IntEnum):
     """Motor alarm codes for LuftBlickTR1."""
+
     OK = 0
     EXCESSIVE_POSITION_DEVIATION = 10
     MOTOR_OVERHEATING = 26
@@ -72,6 +75,7 @@ MOTOR_ALARM_MESSAGES: dict[int, str] = {
 @dataclass
 class SerialConfig:
     """Serial port configuration."""
+
     baudrate: int = 9600
     bytesize: int = 8
     parity: str = "N"
@@ -95,6 +99,7 @@ DEVICE_CONFIGS: dict[str, SerialConfig] = {
 @dataclass
 class CommandProtocol:
     """Protocol definition for a command."""
+
     command: str
     end_char: str = "\r"
     response_end_char: str = "\n"
@@ -152,17 +157,24 @@ SENSOR_CONVERSIONS = {
 }
 
 # Valid filter names
-VALID_FILTERS = [
-    "OPAQUE",
-    "OPEN", "DIFF",
-    "U340", "U340+DIFF",
-    "BP300", "BP300+DIFF",
-    "LPNIR", "LPNIR+DIFF",
-] + [f"ND{i}" for i in range(1, 6)] + [
-    f"ND{i/10:.1f}" for i in range(1, 51)
-] + [f"DIFF{i}" for i in range(1, 6)] + [
-    f"FILTER{i}" for i in range(1, 10)
-] + [f"POL{i}" for i in range(360)]
+VALID_FILTERS = (
+    [
+        "OPAQUE",
+        "OPEN",
+        "DIFF",
+        "U340",
+        "U340+DIFF",
+        "BP300",
+        "BP300+DIFF",
+        "LPNIR",
+        "LPNIR+DIFF",
+    ]
+    + [f"ND{i}" for i in range(1, 6)]
+    + [f"ND{i/10:.1f}" for i in range(1, 51)]
+    + [f"DIFF{i}" for i in range(1, 6)]
+    + [f"FILTER{i}" for i in range(1, 10)]
+    + [f"POL{i}" for i in range(360)]
+)
 
 
 # TETech Temperature Controller Protocol
@@ -172,17 +184,17 @@ TETECH_PROTOCOL = {
         "end_char": "^",
         "nbits": 16,
         "write_commands": {
-            "ST": {"cmd": "1c", "factor": 10},   # Set temperature
-            "BW": {"cmd": "1d", "factor": 10},   # Proportional bandwidth
+            "ST": {"cmd": "1c", "factor": 10},  # Set temperature
+            "BW": {"cmd": "1d", "factor": 10},  # Proportional bandwidth
             "IG": {"cmd": "1e", "factor": 100},  # Integral gain
-            "EO": {"cmd": "30", "factor": 1},    # Enable output
+            "EO": {"cmd": "30", "factor": 1},  # Enable output
         },
         "read_commands": {
             "ST": {"cmd": "5065", "factor": 10},
             "BW": {"cmd": "5166", "factor": 10},
             "IG": {"cmd": "5267", "factor": 100},
-            "T1": {"cmd": "0161", "factor": 10},   # Control sensor temp
-            "T2": {"cmd": "0464", "factor": 10},   # Secondary sensor temp
+            "T1": {"cmd": "0161", "factor": 10},  # Control sensor temp
+            "T2": {"cmd": "0464", "factor": 10},  # Secondary sensor temp
         },
         "error_response": "XXXX60",
     },
@@ -267,4 +279,3 @@ def get_error_message(code: int) -> str:
 def get_motor_alarm_message(code: int) -> str:
     """Get human-readable motor alarm message."""
     return MOTOR_ALARM_MESSAGES.get(code, f"Unknown alarm code: {code}")
-

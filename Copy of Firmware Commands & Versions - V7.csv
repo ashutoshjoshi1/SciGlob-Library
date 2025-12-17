@@ -1,0 +1,227 @@
+ ,Question,HW part,Description,Correct answer if not standard,Error Answer
+"Notes: * stands for a number
+Standard answer without error for question without ? is always HW part + 0 + \n, e.g. question <F1r\n> returns <F10\n> (otherwise see column E)
+Standard answer without error for question with ? is always HW part + ! + * + \n, e.g. question <F1o?\n> may return  <F1!142\n> (otherwise see column E)
+Standard answer with error is always HW part + error index + \n, e.g. question <F1r\n> may return <F11\n>; error index can be 1, 2, 3, etc.",,,,,
+V,HTv?,,Get the software version. EX: V4_C96,<V4_C96\n>,N/A
+?,?,,Get the sensor head number,<Pan*HST\n>,<HT1\n>
+F1*,F1*,F1=Filterwheel 1,Move FW1 to position *=1 to 9,,
+F1b,F1b,,Move FW1 backward by the amount of FWg,,
+F1B*,F1B*,,Move FW1 backwards for * integer steps,,N/A
+F1f,F1f,,Move FW1 forward by the amount of FWg,,
+F1F*,F1F*,,Move FW1 forwards for * integer steps,,N/A
+F1M,F1M,,Move FW1 to the mirror,,
+n,F1m,,Move FW1 in both directions. Note: used to test the movement of the FW1.,,N/A
+F1S,F1o,,Save current position as the “offset position” for FW1,,
+F1R,F1o?,,Read the offset value btw the mirror and the home position for FW1,,
+F1S*,F1o*,,Change the offset value of the mirror and the home position for FW1 (to reset use F1S0),,
+F1r,F1r,,Reset FW1 (ends at the OPEN position),,
+F2*,F2*,F2=Filterwheel 2,Move FW2 to position *=1 to 9,,
+F2b,F2b,,Move FW2 backward by the amount of FWg,,
+F2B*,F2B*,,Move FW2 backwards for * integer steps,,N/A
+F2f,F2f,,Move FW2 forward by the amount of FWg,,
+F2F*,F2F*,,Move FW2 forwards for * integer steps,,N/A
+F2M,F2M,,Move FW2 to the mirror,,
+m,F2m,,Move FW2 in both directions. Note: used to test the movement of the FW2.,,N/A
+F2S,F2o,,Save current position as the “offset position” for FW2,,
+F2R,F2o?,,Read the offset value btw the mirror and the home position for FW2,,
+F2S*,F2o*,,Change the offset value of the mirror and the home position for FW2 (to reset use F2S0),,
+F2r,F2r,,Reset FW2 (ends at the OPEN position),,
+FWg,FWn?,FW=Filterwheels,Get the number of steps between 2 FW positions.,,
+FWn*,FWn*,,"Change number of steps per two adjacent positions for both FWs to *; * is an integer, for 1S it should be *=142, for 2S should be *=150 (WITH THE NEW MOTOR DRIVER THE STEPS=70)",,
+FWSg,FWs?,,Get the filter wheels speed,,
+FWs*,FWs*,,"Change the speed of the filter wheels to value *. Note: If * is large, the speed is slow and vise versa. The new head sensor board needs slower speed, so we set * = 200. The old head sensor board needs faster speed, so we set * = 100.(WITH THE NEW MOTOR DRIVER THE SPEED=170)",F2m,
+BRg,HTbt?,HT=Head sensor/tracker,Read Tracker BaudRate (between head sensor and tracker on the tracker side),"1- <Driver BR is Hardware = Look at the driver BAUD switch , Note: make sure the Switch value is less than 5\n> 
+2- <Driver BR is Software = *  Hz\n> ","1- <Driver BR = ERROR: Reg value * is invalid\n> 
+2- <HT5\n>"
+,HTbsB?,,Read Sensor Head BaudRate PORT B (between head sensor and tracker on the head sensor side); note: the return from HTbt? and HTbsB? should match!,"1- <Sensor Head BR (Hardware) = * Hz\n>
+2- <Sensor Head BR (Software) =  * Hz\n>","1- <Sensor Head BR = ERROR: value is invalid  * Hz\n>
+2- <HT1\n>"
+,HTbs?,,Read Sensor Head BaudRate PORT C (between computer and head sensor); the number in the operation file should match this one,,
+,HTbs*,,Change the baud rate for the sensor head PORT C; this should be used to change the baud rate between computer and head sensor. Allowed * Values(4800/9600/14400/19200/38400/57600/115200/128000).,1- <HT0\n>,"1- <ERROR: Invalid BaudRate, Value enterd = *\n>
+2- <HT4\n>"
+BRHc,HTbth*,,"Change the Baud Rate to * for the tracker by Hardware. The values for * as follow: (0=9600Hz),(1=19200Hz),(2=38400Hz),(3=57600Hz),(4=115200Hz)",1- <HT0\n>,"1- <ERROR: Selected BR is very high for the Sensor Head, So it is set to 4. Note: you need to change the BAUD switch to 4\n>
+2- <ERROR: Selected BR is very low for the Sensor Head, So it is set to 0. Note: you need to change the BAUD switch to 0\n>
+3- <HT4\n>
+4- <HT6\n> 
+5- <HT1\n>
+6- <HT5\n> 
+7- <HT9\n> "
+FBr,HTbm,,Find the baud rate of the tracker and sets the sensor head baud rate to match it,"1- <Hardware Baud Rate = *\n>
+AND
+2- <Software Baud Rate = *\n> ","1- <ERROR: Value read from register [0x13 82] is invalid = *\n>
+2- <HT4\n>
+3- <HT1\n>
+4- <HT5\n>"
+BRSc,HTbts*,,"Change the Baud Rate to * for the tracker by Software. The values for * as follow: (0=9600Hz),(1=19200Hz),(2=38400Hz),(3=57600Hz),(4=115200Hz); this should be used to change the baud rate between head sensor and tracker",1- <HT0\n>,"1- <ERROR: Selected BR is very high for the Sensor Head, So it is set to 4.\n>
+2- <ERROR: Selected BR is very low for the Sensor Head, So it is set to 0.\n>
+3- <HT4\n>
+4- <HT6\n>
+5- <HT1\n>
+6- <HT5\n>
+7- <HT9\n>"
+PAh,HTh?,,Read head sensor humidity. Note: need to be divided by 1024. Note: take around 5 sec to receive the reponse.,HT!X (X=RH value in % *1024),
+IDg,HTI?,,Read head sensor ID return only the number,,
+IDc,HTI*,,"Change head sensor ID to “Pan*HST”, *=integer",,
+PAp,HTp?,,Read head sensor pressure. Need to be divided by 100. Note: take around 5 sec to receive the reponse.,HT!X (X=Pressure value in hPa *100),
+RHs,HTr,,Reset Head Sensor to restart the program from the beginning(Refreshes Head Sensor Software),,
+PAt,HTt?,,Read head sensor temperature. Need to be divided by 100. Note: take around 5 sec to receive the reponse.,HT!X (X=Temperature value in deg *100),
+ACC,MA1,MA=Azimuth Motor,Change direction of Azimuth motor to CCW,,
+ACW,MA2,,Change direction of Azimuth motor to CW,,
+MAa,MAa,,"Reset the Alarm for Az, if the LED of the tracker driver lights are flashing. It does not work with all errors.",,
+RAa,MAa?,,Read Alarm Code for Az,1- <Alarm Code = *\n>,
+GAa,MAA*,,Change gear A value for Az to * (changes motor resolution),,N/A
+HAa*,MAa*,,Change the acceleration of the home position command for Az,,
+GBa,MAB*,,Change gear B value for Az to * (changes motor resolution),,N/A
+MCa,MAc,,"Configure Az motor driver after changing any of the driver parameters
+",,
+MRa,MAd,,"Set all the parameters for Az motors such as gear A, gear B, rotation direction, etc ) to the default values. ",,
+,MAd?,,Read AZ driver temp. need to be divided by 10.,,
+REa,MAe?,,Read Communication Error Code for Az,1- <Communication Error Code = *\n>,
+TRa,MAf?,,Check the Azimuth motor parameters,"<AZIMUTH\n\r> AND
+<1- Electronic gear A = *\n\r> AND
+<2- Electronic gear B = *\n\r> AND
+<3- Wrap setting range [rev] = *\n\r> AND
+<4- Wrap range offset ratio [%] = *\n\r> AND
+<5- Motor rotation direction (Positive side) = * \n\r> (* = CW OR *=CCW) AND
+<6- Motor Automatic current cutback function = *\n\r> (*=Disable OR *=Enable) AND
+<7- Home operating speed = * Hz\n\r> AND
+<8- Home acceleration/deceleration = * Hz/s\n\r> AND 
+<9- Home starting speed = * Hz\n\r> AND
+<10- Motor operating speed = * Hz\n\r> AND
+<11- Motor starting/changing speed rate = * Hz/s\n\r> AND
+<12- Motor stopping deceleration = * Hz/s\n\r> AND 
+<13- Motor oprating current = *%\n\r> AND
+<14- Motor type =  *\n\r> (* = OrientalMotor OR *= old Motor) AND
+<EOF> ","<AZIMUTH\n\r> AND
+<1- Electronic gear A = ERROR\n\r> AND
+<2- Electronic gear B = ERROR\n\r> AND
+<3- Wrap setting range [rev] = ERROR\n\r> AND
+<4- Wrap range offset ratio [%] = ERROR\n\r> AND
+<5- Motor rotation direction (Positive side) = ERROR\n\r> AND
+<6- Motor Automatic current cutback function = ERROR\n\r> AND
+<7- Home operating speed = ERROR\n\r> AND
+<8- Home acceleration/deceleration = ERROR\n\r> AND 
+<9- Home starting speed = ERROR\n\r> AND
+<10- Motor operating speed = * Hz\n\r> AND
+<11- Motor starting/changing speed rate = * Hz/s\n\r> AND
+<12- Motor stopping deceleration = * Hz/s\n\r> AND 
+<13- Motor oprating current = *%\n\r> AND
+<14- Motor type =  *\n\r> (* = OrientalMotor OR *= old Motor) AND
+<EOF>"
+HRa,MAh,,Change the home position of the Az motor to the current position.,,
+HBa*,MAi*,,Change the starting speed of the home position command,,N/A
+UMa,MAm,,Save changes of the Az driver to the non-volatile memory,,
+,MAm?,,Read AZ motor temp. Need to be divided by 10.,,
+TRP,MAp?,,Read the tracker current position AZ,,
+WPa,MAp*,,Change wrap range offset ration for Az to * (changes motor resolution),,N/A
+RGar,MAR?,,Read the AZ Register,1- <The value in Reg(0x**)[AZ]= * \n>,
+RGaw*,MAR*,,Write the AZ Register,,
+HSa*,MAs*,,Change the speed of the home position command for Az,,N/A
+WRa,MAw*,,Change wrap setting range for Az to * (changes motor resolution),,N/A
+MCg,MBc?,MB=Both Motors,Read motor current should be (00 3 e8),1- <MB! * * * *\n>,
+MCc*,MBc*,,Change motor current (only for Oriental),MBc8000 = 80%,
+HRb,MBh,,Change the home position for both Az & Ze motors to the current position.,,
+RGg,MBR?,,Read Register number,"1- <Register Number(hex)=0x*\n> AND 
+2- <Register Number(decimal)=*\n> AND
+3- <EOF\n>",N/A
+RGc*,MBR*,,Change Register number ,,N/A
+MSg,MBs?,,Read motor speed (should be 0 0 27 10),1- <MB! * * * *\n>,
+MSc*,MBs*,,Change motor speed (only for Oriental),,
+,MBa?,,"Read starting/changing speed rate. (Sets the acceleration/deceleration rate or
+acceleration/deceleration time ), 1 to 1,000,000,000 (1=0.001 kHz/s, 1=0.001 s, or
+1=0.001 ms/kHz)",1- <MB! * * * *\n>,
+,MBa*,,"Change starting/changing speed rate. (Sets the acceleration/deceleration rate or
+acceleration/deceleration time ), 1 to 1,000,000,000 (1=0.001 kHz/s, 1=0.001 s, or
+1=0.001 ms/kHz)",,
+,MBd?,,"Read stopping deceleration (Sets the stopping deceleration or stop time) 1 to 1,000,000,000 (1=0.001 kHz/s, 1=0.001 s, or 1=0.001 ms/kHz)",1- <MB! * * * *\n>,
+,MBd*,,"Change stopping deceleration (Sets the stopping deceleration or stop time) 1 to 1,000,000,000 (1=0.001 kHz/s, 1=0.001 s, or 1=0.001 ms/kHz)",,
+MTg,MBt?,,"Read motor type (“Oriental Motor”, “FLIR”) ","1- <OrientalMotor\n>
+2- <Flir Motor\n>",
+MTc*,MBt*,,"EX(MBt0): Select motor type Directed Perceptions;
+EX(MBt1): Select motor type Oriental Motor
+",,
+ZCC,MZ1,MZ=Zenith Motor,Change direction of Zenith motor to CCW ,,
+ZCW,MZ2,,Change direction of Zenith motor to CW,,
+MAz,MZa,,"Reset the Alarm for Ze, if the LED lights of the Trcaker Driver are flashing. It does not work with all errors.",,
+RAz,MZa?,,Read Alarm Code for Ze,1- <Alarm Code = *\n>,
+GAz,MZA*,,Change gear A value for Ze to * (changes motor resolution),,N/A
+HAz*,MZa*,,Change the acceleration of the home position command for Ze,,
+GBz,MZB*,,Change gear B value for Ze to * (changes motor resolution),,N/A
+MCz,MZc,,"Configure Ze motor driver after changing any of the driver parameters; Note: after changing any of the motor driver parameters such as home position, gear A/B value, direction of rotation, etc. ones has to send this command to configure the drivers. After that, one needs to send UMa/UMz to save these changes in the non-volatile memory. 
+",,
+MRz,MZd,,"Set all the parameters for Ze motors such as gear A, gear B, rotation direction, etc ) to the default values. ",,
+,MZd?,,Read ZE Driver temp. Need to be divided by 10.,,
+REz,MZe?,,Read Communication Error Code for Ze,1- <Communication Error Code = *\n>,
+TRz,MZf?,,Check the zenith parameters,"<ZENITH\n\r> AND
+<1- Electronic gear A = *\n\r> AND
+<2- Electronic gear B = *\n\r> AND
+<3- Wrap setting range [rev] = *\n\r> AND
+<4- Wrap range offset ratio [%] = *\n\r> AND
+<5- Motor rotation direction (Positive side) = * \n\r> (* = CW OR *=CCW) AND
+<6- Motor Automatic current cutback function = *\n\r> (*=Disable OR *=Enable) AND
+<7- Home operating speed = * Hz\n\r> AND
+<8- Home acceleration/deceleration = * Hz/s\n\r> AND 
+<9- Home starting speed = * Hz\n\r> AND
+<10- Motor operating speed = * Hz\n\r> AND
+<11- Motor starting/changing speed rate = * Hz/s\n\r> AND
+<12- Motor stopping deceleration = * Hz/s\n\r> AND 
+<13- Motor oprating current = *%\n\r> AND
+<14- Motor type =  *\n\r> (* = OrientalMotor OR *= old Motor) AND
+<EOF> ","<ZENITH\n\r> AND
+<1- Electronic gear A = ERROR\n\r> AND
+<2- Electronic gear B = ERROR\n\r> AND
+<3- Wrap setting range [rev] = ERROR\n\r> AND
+<4- Wrap range offset ratio [%] = ERROR\n\r> AND
+<5- Motor rotation direction (Positive side) = ERROR\n\r> AND
+<6- Motor Automatic current cutback function = ERROR\n\r> AND
+<7- Home operating speed = ERROR\n\r> AND
+<8- Home acceleration/deceleration = ERROR\n\r> AND 
+<9- Home starting speed = ERROR\n\r> AND
+<10- Motor operating speed = * Hz\n\r> AND
+<11- Motor starting/changing speed rate = * Hz/s\n\r> AND
+<12- Motor stopping deceleration = * Hz/s\n\r> AND 
+<13- Motor oprating current = *%\n\r> AND
+<14- Motor type =  *\n\r> (* = OrientalMotor OR *= old Motor) AND
+<EOF>"
+HRz,MZh,,"Change the home position of the Ze motor to the current position. Note: If you send TRw after the command HRz, you will receive TRh0,0. No Need For UMz/UMa or MCz/MCa. 
+Note: Restart the power of the motor drivers. Then, check the position by sending TRw. you should receive TRh0,0 ",,
+HBz*,MZi*,,Change the starting speed of the home position command,,N/A
+UMz,MZm,,Save changes of the Ze driver to the non-volatile memory,,
+,MZm?,,Read ZE motor temp. Need to be divided by 10.,,
+TRT,MZp?,,Read the tracker current position  ZE,,
+WPz,MZp*,,Change wrap range offset ratio for Ze to * (changes motor resolution),,N/A
+RGzr,MZR?,,Read the ZE Register,1- <The value in Reg(0x**)[ZE]= * \n>,
+RGzw*,MZR*,,Write the ZE Register,,
+HSz*,MZs*,,Change the speed of the home position command for Ze,,N/A
+WRz,MZw*,,Change wrap setting range for Ze to * (changes motor resolution),,N/A
+S1s,S1s,S1=Spectrometer 1,Spectrometer 1 power cycle,,
+S1Sg,S1S?,,Get number of relay which is triggered by command “S1s”,,
+S1S*,S1S*,,"Command “S1s” by default triggers relay 3. If you want to assign another relay to this command, for example the relay 4, must be sent S1S4",,
+S2s,S2s,S2=Spectrometer 2,Spectrometer 2 power cycle,,
+S2Sg,S2S?,,Get number of relay which is triggered by command “S2s”,,
+S2S*,S2S*,,"Command “S4s” by default triggers relay 4. If you want to assign another relay to this command, for example the relay 3, must be sent S1S3",,
+Off,TR0,TR=Tracker,Turn Off the tracker,,
+On,TR1,,Turn on the Tracker,,
+TRb,TRb,,"Move tracker to position (pan,tilt). For example TRb50000,50000",,
+TRSdg,TRd?,,Read the delay for TRs (Length of time tracker is off in seconds).,,
+TRSd*,TRd*,,Set the delay for TRs (Length of time tracker is off in seconds).,,
+TRm,TRm,,Read the magnetic encoder,"1- <TRh *,*\n>",
+TRo,TRo,,Set all tracker parameters for Oriental Motor. Note: <TRo\n> / <TR9\n> takes 3 sec.,"1- <MZ0\n> AND
+2- <MA0\n> AND
+3- <MZ0\n> AND
+4- <MA0\n> AND
+5- <MA0\n> AND
+6- <TR0\n>","1- <MZ*\n> AND
+2- <MA*\n> AND
+3- <MZ*\n> AND
+4- <MA*\n> AND
+5- <MA*\n> AND
+6- <TR9\n>"
+TRp,TRp,,Move pan (azimuth) position. For example TRp50000 moves the pan(azimuth) motor to position 50000,,
+TRr,TRr,,Reset Tracker to home position,,N/A
+TRs,TRs,,Tracker power cycle,,
+TRSg,TRS?,,Get relay triggered by command “TRs”,,
+TRS*,TRS*,,"Command “TRs” by default triggers relay 2. If you want to assign another relay to this command, for example the relay 3, must be sent TRS3",,
+TRt,TRt,,Move tilt (zenith) position. For example TRt50000 moves the tilt(zenith) motor to position 50000,,
+TRw,TRw,,"Read the tracker current position AZ, ZE ","1- <TRh *,*\n>",

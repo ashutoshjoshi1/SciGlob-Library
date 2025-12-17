@@ -94,6 +94,16 @@ from sciglob.config import (
     SerialConfig,
     TemperatureControllerConfig,
 )
+
+# Commands Reference
+from sciglob.core.commands import (
+    ALL_COMMANDS,
+    CommandCategory,
+    FirmwareCommand,
+    get_command,
+    list_commands,
+    print_command_reference,
+)
 from sciglob.core.exceptions import (
     CommunicationError,
     ConfigurationError,
@@ -150,6 +160,13 @@ __all__ = [
     # Help
     "help",
     "help_config",
+    # Commands Reference
+    "FirmwareCommand",
+    "CommandCategory",
+    "ALL_COMMANDS",
+    "get_command",
+    "list_commands",
+    "print_command_reference",
     # Exceptions
     "SciGlobError",
     "ConnectionError",

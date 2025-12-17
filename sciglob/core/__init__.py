@@ -1,6 +1,24 @@
 """Core utilities and base classes for SciGlob library."""
 
 from sciglob.core.base import BaseDevice
+from sciglob.core.commands import (
+    ALL_COMMANDS,
+    AZIMUTH_MOTOR_COMMANDS,
+    BOTH_MOTORS_COMMANDS,
+    FILTER_WHEEL_1_COMMANDS,
+    FILTER_WHEEL_2_COMMANDS,
+    FILTER_WHEELS_COMMON_COMMANDS,
+    HEAD_SENSOR_COMMANDS,
+    SPECTROMETER_1_COMMANDS,
+    SPECTROMETER_2_COMMANDS,
+    TRACKER_COMMANDS,
+    ZENITH_MOTOR_COMMANDS,
+    CommandCategory,
+    FirmwareCommand,
+    get_command,
+    list_commands,
+    print_command_reference,
+)
 from sciglob.core.connection import SerialConnection, parse_position_response, parse_response
 from sciglob.core.exceptions import (
     CommunicationError,
@@ -45,6 +63,23 @@ from sciglob.core.utils import (
 __all__ = [
     # Base
     "BaseDevice",
+    # Commands
+    "FirmwareCommand",
+    "CommandCategory",
+    "ALL_COMMANDS",
+    "HEAD_SENSOR_COMMANDS",
+    "FILTER_WHEEL_1_COMMANDS",
+    "FILTER_WHEEL_2_COMMANDS",
+    "FILTER_WHEELS_COMMON_COMMANDS",
+    "TRACKER_COMMANDS",
+    "AZIMUTH_MOTOR_COMMANDS",
+    "ZENITH_MOTOR_COMMANDS",
+    "BOTH_MOTORS_COMMANDS",
+    "SPECTROMETER_1_COMMANDS",
+    "SPECTROMETER_2_COMMANDS",
+    "get_command",
+    "list_commands",
+    "print_command_reference",
     # Connection
     "SerialConnection",
     "parse_response",

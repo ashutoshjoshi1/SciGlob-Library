@@ -10,7 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Nothing yet
 
-## [0.1.4] - 2025-12-03
+## [0.1.5] - 2024-12-17
+
+### Added
+- `CommandBuilder` class for constructing device commands programmatically
+- Complete command set for all supported devices
+- Real-Time Platform Architecture documentation (`docs/PLATFORM_ARCHITECTURE.md`)
+- Comprehensive 1,700+ line technical specification for distributed monitoring system
+- Command validation and formatting utilities
+
+### Changed
+- Improved filter wheel command handling
+- Enhanced device protocol implementations
+
+### Documentation
+- Added detailed architecture for 300+ station real-time platform
+- Database schemas for TimescaleDB and PostgreSQL
+- Kubernetes deployment specifications
+- Security architecture with RBAC implementation
+- 10-week development roadmap
+
+## [0.1.4] - 2024-12-03
 
 ### Added
 - Help system for all device classes (`.help()`, `.list_methods()`, `.list_properties()`)
@@ -127,7 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 0.1.4 | 2025-12-03 | Added help system and configuration classes |
+| 0.1.5 | 2024-12-17 | Added CommandBuilder, real-time platform architecture docs |
+| 0.1.4 | 2024-12-03 | Added help system and configuration classes |
 | 0.1.3 | 2025-12-03 | Updated README URLs |
 | 0.1.2 | 2025-12-03 | Updated author info |
 | 0.1.1 | 2025-12-03 | Fixed PyPI metadata |

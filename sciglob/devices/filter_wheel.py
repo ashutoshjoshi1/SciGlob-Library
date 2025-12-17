@@ -22,10 +22,26 @@ class FilterWheel(HelpMixin):
     Controls filter wheel selection through the Head Sensor.
     Supports FW1 and FW2 with 9 positions each.
 
-    Commands:
-    - Set position: "F1<1-9>" or "F2<1-9>"
-    - Reset: "F1r" or "F2r"
-    - Response: "F10" (success) or "F1N" (error code N)
+    Available Commands (from Firmware V7):
+        Position Control:
+        - set_position(1-9): Move to specific position
+        - set_filter(name): Move to position by filter name
+        - reset(): Reset to home position (OPEN)
+        - move_to_mirror(): Move to mirror position
+
+        Fine Movement:
+        - move_forward(): Move forward by configured step count
+        - move_backward(): Move backward by configured step count
+        - move_forward_steps(n): Move forward by n steps
+        - move_backward_steps(n): Move backward by n steps
+
+        Calibration:
+        - get_offset(): Read offset between mirror and home
+        - set_offset(value): Set offset value (use 0 to reset)
+        - save_offset(): Save current position as offset
+
+        Testing:
+        - test_movement(): Test movement in both directions
 
     Example:
         >>> with HeadSensor(port="/dev/ttyUSB0") as hs:
@@ -36,6 +52,8 @@ class FilterWheel(HelpMixin):
         ...     fw1.set_filter("OPEN")
         ...     # Get current filter
         ...     print(f"Current: {fw1.current_filter}")
+        ...     # Fine adjustment
+        ...     fw1.move_forward_steps(10)
 
     Help:
         >>> fw1.help()              # Show full help
@@ -51,10 +69,17 @@ class FilterWheel(HelpMixin):
         "valid_filters": "OPEN, OPAQUE, U340, BP300, LPNIR, ND1-ND5, DIFF, etc.",
     }
     _command_reference = {
-        "F1<1-9>": "Set filter wheel 1 to position 1-9",
-        "F2<1-9>": "Set filter wheel 2 to position 1-9",
-        "F1r": "Reset filter wheel 1",
-        "F2r": "Reset filter wheel 2",
+        "F*<1-9>": "Move to position 1-9",
+        "F*r": "Reset to home (OPEN position)",
+        "F*b": "Move backward by FWn steps",
+        "F*B<n>": "Move backward by n integer steps",
+        "F*f": "Move forward by FWn steps",
+        "F*F<n>": "Move forward by n integer steps",
+        "F*M": "Move to mirror position",
+        "F*m": "Test movement (both directions)",
+        "F*o": "Save current position as offset",
+        "F*o?": "Read offset value",
+        "F*o<n>": "Set offset value (0 to reset)",
     }
 
     def __init__(
@@ -194,7 +219,7 @@ class FilterWheel(HelpMixin):
         """
         Reset the filter wheel to its home position.
 
-        The wheel will rotate to position 1 (home).
+        The wheel will rotate to position 1 (home/OPEN).
 
         Raises:
             FilterWheelError: If reset fails
@@ -202,11 +227,174 @@ class FilterWheel(HelpMixin):
         command = f"{self._device_id}r"
         self.logger.info(f"Resetting filter wheel {self._wheel_id}")
 
-        response = self._send_command(command)
+        response = self._send_command(command, timeout=10.0)
         self._check_response(response)
 
         self._position = 1  # Reset goes to position 1
         self.logger.info(f"Filter wheel {self._wheel_id} reset to position 1")
+
+    def home(self) -> None:
+        """
+        Alias for reset() - move to home position.
+
+        Raises:
+            FilterWheelError: If reset fails
+        """
+        self.reset()
+
+    def move_forward(self) -> None:
+        """
+        Move filter wheel forward by the configured step amount (FWn).
+
+        Raises:
+            FilterWheelError: If movement fails
+        """
+        command = f"{self._device_id}f"
+        self.logger.debug(f"Moving filter wheel {self._wheel_id} forward")
+
+        response = self._send_command(command)
+        self._check_response(response)
+        self._position = 0  # Position now unknown
+
+    def move_backward(self) -> None:
+        """
+        Move filter wheel backward by the configured step amount (FWn).
+
+        Raises:
+            FilterWheelError: If movement fails
+        """
+        command = f"{self._device_id}b"
+        self.logger.debug(f"Moving filter wheel {self._wheel_id} backward")
+
+        response = self._send_command(command)
+        self._check_response(response)
+        self._position = 0  # Position now unknown
+
+    def move_forward_steps(self, steps: int) -> None:
+        """
+        Move filter wheel forward by a specific number of steps.
+
+        Args:
+            steps: Number of steps to move forward
+
+        Raises:
+            FilterWheelError: If movement fails
+        """
+        if steps < 0:
+            raise ValueError("Steps must be positive (use move_backward_steps for reverse)")
+
+        command = f"{self._device_id}F{steps}"
+        self.logger.debug(f"Moving filter wheel {self._wheel_id} forward {steps} steps")
+
+        response = self._send_command(command)
+        self._check_response(response)
+        self._position = 0  # Position now unknown
+
+    def move_backward_steps(self, steps: int) -> None:
+        """
+        Move filter wheel backward by a specific number of steps.
+
+        Args:
+            steps: Number of steps to move backward
+
+        Raises:
+            FilterWheelError: If movement fails
+        """
+        if steps < 0:
+            raise ValueError("Steps must be positive")
+
+        command = f"{self._device_id}B{steps}"
+        self.logger.debug(f"Moving filter wheel {self._wheel_id} backward {steps} steps")
+
+        response = self._send_command(command)
+        self._check_response(response)
+        self._position = 0  # Position now unknown
+
+    def move_to_mirror(self) -> None:
+        """
+        Move filter wheel to the mirror position.
+
+        Raises:
+            FilterWheelError: If movement fails
+        """
+        command = f"{self._device_id}M"
+        self.logger.info(f"Moving filter wheel {self._wheel_id} to mirror position")
+
+        response = self._send_command(command)
+        self._check_response(response)
+        self._position = 0  # Mirror position is not a numbered position
+
+    def test_movement(self) -> None:
+        """
+        Test filter wheel movement in both directions.
+
+        This command moves the wheel forward and backward to verify
+        proper operation.
+
+        Raises:
+            FilterWheelError: If test fails
+        """
+        command = f"{self._device_id}m"
+        self.logger.info(f"Testing filter wheel {self._wheel_id} movement")
+
+        response = self._send_command(command, timeout=5.0)
+        self._check_response(response)
+
+    def get_offset(self) -> int:
+        """
+        Read the offset value between mirror and home position.
+
+        Returns:
+            Offset value as integer
+
+        Raises:
+            FilterWheelError: If query fails
+        """
+        command = f"{self._device_id}o?"
+        response = self._send_command(command)
+
+        # Parse response: F1!<value> or F2!<value>
+        if "!" in response:
+            try:
+                value_str = response.split("!")[1].strip()
+                return int(value_str)
+            except (IndexError, ValueError) as e:
+                raise FilterWheelError(f"Failed to parse offset response: {response}") from e
+
+        self._check_response(response)
+        return 0
+
+    def set_offset(self, value: int) -> None:
+        """
+        Set the offset value between mirror and home position.
+
+        Args:
+            value: New offset value (use 0 to reset)
+
+        Raises:
+            FilterWheelError: If setting fails
+        """
+        command = f"{self._device_id}o{value}"
+        self.logger.info(f"Setting filter wheel {self._wheel_id} offset to {value}")
+
+        response = self._send_command(command)
+        self._check_response(response)
+
+    def save_offset(self) -> None:
+        """
+        Save current position as the offset position.
+
+        This sets the current physical position as the reference offset
+        for the mirror position.
+
+        Raises:
+            FilterWheelError: If save fails
+        """
+        command = f"{self._device_id}o"
+        self.logger.info(f"Saving filter wheel {self._wheel_id} offset position")
+
+        response = self._send_command(command)
+        self._check_response(response)
 
     def get_filter_map(self) -> dict[int, str]:
         """

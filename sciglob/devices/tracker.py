@@ -67,17 +67,40 @@ class Tracker(HelpMixin):
         "home_position": "[0.0, 180.0] degrees",
     }
     _command_reference = {
-        "TRw": "Get current position (WHERE command)",
-        "TRb<az>,<zen>": "Move both axes (BOTH command)",
-        "TRp<steps>": "Move azimuth (PAN command)",
-        "TRt<steps>": "Move zenith (TILT command)",
+        # Tracker Commands
+        "TR0": "Turn off tracker",
+        "TR1": "Turn on tracker",
+        "TRb<az>,<zen>": "Move both axes",
+        "TRp<steps>": "Move azimuth (PAN)",
+        "TRt<steps>": "Move zenith (TILT)",
+        "TRw": "Get current position",
+        "TRm": "Get magnetic encoder (LuftBlickTR1)",
         "TRr": "Soft reset tracker",
-        "TRY": "Power cycle tracker",
-        "TRm": "Get magnetic encoder position (LuftBlickTR1)",
-        "MA!t?": "Get azimuth motor temperature",
-        "MZ!t?": "Get zenith motor temperature",
-        "MA!a?": "Get azimuth alarm status",
-        "MZ!a?": "Get zenith alarm status",
+        "TRs": "Power cycle tracker",
+        "TRo": "Configure for Oriental Motor",
+        # Azimuth Motor (MA)
+        "MA1/MA2": "Set direction CCW/CW",
+        "MAa/MAa?": "Reset/Read alarm",
+        "MAd?/MAm?": "Read driver/motor temp",
+        "MAf?": "Read all Az parameters",
+        "MAh": "Set home position",
+        "MAc": "Configure Az driver",
+        "MAm": "Save to non-volatile memory",
+        # Zenith Motor (MZ)
+        "MZ1/MZ2": "Set direction CCW/CW",
+        "MZa/MZa?": "Reset/Read alarm",
+        "MZd?/MZm?": "Read driver/motor temp",
+        "MZf?": "Read all Ze parameters",
+        "MZh": "Set home position",
+        "MZc": "Configure Ze driver",
+        "MZm": "Save to non-volatile memory",
+        # Both Motors (MB)
+        "MBh": "Set home for both motors",
+        "MBt?/MBt*": "Get/Set motor type",
+        "MBs?/MBs*": "Get/Set motor speed",
+        "MBc?/MBc*": "Get/Set motor current",
+        "MBa?/MBa*": "Get/Set acceleration",
+        "MBd?/MBd*": "Get/Set deceleration",
     }
 
     def __init__(self, head_sensor: "HeadSensor"):
@@ -524,6 +547,351 @@ class Tracker(HelpMixin):
                     alarm_code=code,
                     axis=axis,
                 )
+
+    def reset_alarm(self, axis: str = "both") -> bool:
+        """
+        Reset motor alarm(s).
+
+        Args:
+            axis: 'azimuth', 'zenith', or 'both'
+
+        Returns:
+            True if successful
+
+        Note:
+            Does not work with all error types.
+        """
+        success = True
+
+        if axis in ("azimuth", "both"):
+            response = self._send_command("MAa")
+            if "MA0" not in response:
+                success = False
+
+        if axis in ("zenith", "both"):
+            response = self._send_command("MZa")
+            if "MZ0" not in response:
+                success = False
+
+        return success
+
+    # =========================================================================
+    # Motor Direction Control
+    # =========================================================================
+
+    def set_azimuth_direction(self, clockwise: bool = True) -> bool:
+        """
+        Set azimuth motor rotation direction.
+
+        Args:
+            clockwise: True for CW, False for CCW
+
+        Returns:
+            True if successful
+        """
+        cmd = "MA2" if clockwise else "MA1"
+        response = self._send_command(cmd)
+        return "MA0" in response
+
+    def set_zenith_direction(self, clockwise: bool = True) -> bool:
+        """
+        Set zenith motor rotation direction.
+
+        Args:
+            clockwise: True for CW, False for CCW
+
+        Returns:
+            True if successful
+        """
+        cmd = "MZ2" if clockwise else "MZ1"
+        response = self._send_command(cmd)
+        return "MZ0" in response
+
+    # =========================================================================
+    # Motor Configuration
+    # =========================================================================
+
+    def configure_azimuth(self) -> bool:
+        """
+        Configure azimuth motor driver after changing parameters.
+
+        Must be called after changing gear, direction, or other settings.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("MAc")
+        return "MA0" in response
+
+    def configure_zenith(self) -> bool:
+        """
+        Configure zenith motor driver after changing parameters.
+
+        Must be called after changing gear, direction, or other settings.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("MZc")
+        return "MZ0" in response
+
+    def set_azimuth_defaults(self) -> bool:
+        """
+        Reset azimuth motor parameters to default values.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("MAd")
+        return "MA0" in response
+
+    def set_zenith_defaults(self) -> bool:
+        """
+        Reset zenith motor parameters to default values.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("MZd")
+        return "MZ0" in response
+
+    def save_azimuth_settings(self) -> bool:
+        """
+        Save azimuth driver settings to non-volatile memory.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("MAm")
+        return "MA0" in response
+
+    def save_zenith_settings(self) -> bool:
+        """
+        Save zenith driver settings to non-volatile memory.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("MZm")
+        return "MZ0" in response
+
+    def set_home_position_current(self, axis: str = "both") -> bool:
+        """
+        Set current position as home position.
+
+        Args:
+            axis: 'azimuth', 'zenith', or 'both'
+
+        Returns:
+            True if successful
+
+        Note:
+            After setting, restart power and verify with get_position().
+        """
+        success = True
+
+        if axis == "both":
+            response = self._send_command("MBh")
+            return "MB0" in response or "MZ0" in response
+
+        if axis == "azimuth":
+            response = self._send_command("MAh")
+            if "MA0" not in response:
+                success = False
+
+        if axis == "zenith":
+            response = self._send_command("MZh")
+            if "MZ0" not in response:
+                success = False
+
+        return success
+
+    def get_motor_parameters(self, axis: str) -> str:
+        """
+        Get all motor parameters for an axis.
+
+        Args:
+            axis: 'azimuth' or 'zenith'
+
+        Returns:
+            Multi-line string with all parameters
+        """
+        cmd = "MAf?" if axis == "azimuth" else "MZf?"
+        response = self._send_command(cmd, timeout=5.0)
+        return response
+
+    # =========================================================================
+    # Motor Type and Speed Control (Oriental Motor)
+    # =========================================================================
+
+    def get_motor_type(self) -> str:
+        """
+        Get the configured motor type.
+
+        Returns:
+            Motor type string ('OrientalMotor' or 'Flir Motor')
+        """
+        response = self._send_command("MBt?")
+        return response.strip()
+
+    def set_motor_type(self, motor_type: int) -> bool:
+        """
+        Set the motor type.
+
+        Args:
+            motor_type: 0 for Directed Perceptions/FLIR, 1 for Oriental Motor
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command(f"MBt{motor_type}")
+        return "MB0" in response
+
+    def configure_oriental_motor(self) -> bool:
+        """
+        Configure tracker for Oriental Motor.
+
+        Sets all parameters optimized for Oriental Motor operation.
+        Takes approximately 3 seconds.
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command("TRo", timeout=5.0)
+        return "TR0" in response
+
+    def get_motor_speed(self) -> str:
+        """
+        Get motor speed setting.
+
+        Returns:
+            Speed value string
+        """
+        response = self._send_command("MBs?")
+        if "!" in response:
+            return response.split("!")[1].strip()
+        return response.strip()
+
+    def set_motor_speed(self, speed: int) -> bool:
+        """
+        Set motor speed (Oriental Motor only).
+
+        Args:
+            speed: Speed value
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command(f"MBs{speed}")
+        return "MB0" in response
+
+    def get_motor_current(self) -> str:
+        """
+        Get motor current setting.
+
+        Returns:
+            Current value string
+        """
+        response = self._send_command("MBc?")
+        if "!" in response:
+            return response.split("!")[1].strip()
+        return response.strip()
+
+    def set_motor_current(self, current: int) -> bool:
+        """
+        Set motor current (Oriental Motor only).
+
+        Args:
+            current: Current value (e.g., 8000 = 80%)
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command(f"MBc{current}")
+        return "MB0" in response
+
+    def get_acceleration(self) -> str:
+        """
+        Get motor acceleration/deceleration rate.
+
+        Returns:
+            Acceleration value (1 = 0.001 kHz/s)
+        """
+        response = self._send_command("MBa?")
+        if "!" in response:
+            return response.split("!")[1].strip()
+        return response.strip()
+
+    def set_acceleration(self, rate: int) -> bool:
+        """
+        Set motor acceleration/deceleration rate.
+
+        Args:
+            rate: Acceleration rate (1 to 1,000,000,000, where 1 = 0.001 kHz/s)
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command(f"MBa{rate}")
+        return "MB0" in response
+
+    def get_deceleration(self) -> str:
+        """
+        Get motor stopping deceleration.
+
+        Returns:
+            Deceleration value (1 = 0.001 kHz/s)
+        """
+        response = self._send_command("MBd?")
+        if "!" in response:
+            return response.split("!")[1].strip()
+        return response.strip()
+
+    def set_deceleration(self, rate: int) -> bool:
+        """
+        Set motor stopping deceleration.
+
+        Args:
+            rate: Deceleration rate (1 to 1,000,000,000, where 1 = 0.001 kHz/s)
+
+        Returns:
+            True if successful
+        """
+        response = self._send_command(f"MBd{rate}")
+        return "MB0" in response
+
+    # =========================================================================
+    # Communication Error Reading
+    # =========================================================================
+
+    def get_communication_errors(self) -> dict[str, int]:
+        """
+        Get communication error codes for both motors.
+
+        Returns:
+            Dictionary with error codes for 'azimuth' and 'zenith'
+        """
+        errors = {}
+
+        try:
+            response = self._send_command("MAe?")
+            if "=" in response:
+                errors["azimuth"] = int(response.split("=")[1].strip())
+            else:
+                errors["azimuth"] = 0
+        except Exception:
+            errors["azimuth"] = -1
+
+        try:
+            response = self._send_command("MZe?")
+            if "=" in response:
+                errors["zenith"] = int(response.split("=")[1].strip())
+            else:
+                errors["zenith"] = 0
+        except Exception:
+            errors["zenith"] = -1
+
+        return errors
 
     def get_status(self) -> dict[str, Any]:
         """

@@ -488,6 +488,164 @@ class HeadSensor(BaseDevice, HelpMixin):
 
         return readings
 
+    def get_version(self) -> str:
+        """
+        Get firmware version string.
+
+        Returns:
+            Version string (e.g., 'V4_C96')
+        """
+        response = self.send_command("HTv?")
+        # Response format: V4_C96 or similar
+        return response.strip()
+
+    def get_head_id_number(self) -> int:
+        """
+        Get head sensor ID number only.
+
+        Returns:
+            Head sensor ID as integer
+        """
+        response = self.send_command("HTI?")
+        # Parse HT!<number> response
+        if "!" in response:
+            try:
+                return int(response.split("!")[1].strip())
+            except (ValueError, IndexError):
+                pass
+        return 0
+
+    def set_head_id(self, id_number: int) -> bool:
+        """
+        Set head sensor ID number.
+
+        The ID will be stored as 'Pan{id_number}HST'.
+
+        Args:
+            id_number: New ID number
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command(f"HTI{id_number}")
+        return "HT0" in response
+
+    def reset_head_sensor(self) -> bool:
+        """
+        Reset head sensor (restarts the firmware).
+
+        Returns:
+            True if successful
+        """
+        self.logger.info("Resetting head sensor...")
+        response = self.send_command("HTr", timeout=5.0)
+        return "HT0" in response
+
+    # =========================================================================
+    # Baud Rate Commands
+    # =========================================================================
+
+    def get_baudrate(self) -> dict[str, str]:
+        """
+        Get current baud rate settings.
+
+        Returns:
+            Dictionary with baud rate information for different ports
+        """
+        result = {}
+
+        try:
+            response = self.send_command("HTbs?")
+            result["computer_to_sensor"] = response.strip()
+        except Exception as e:
+            result["computer_to_sensor"] = f"Error: {e}"
+
+        try:
+            response = self.send_command("HTbt?")
+            result["sensor_to_tracker"] = response.strip()
+        except Exception as e:
+            result["sensor_to_tracker"] = f"Error: {e}"
+
+        return result
+
+    def find_tracker_baudrate(self) -> str:
+        """
+        Automatically find and match tracker baud rate.
+
+        This command finds the tracker's baud rate and sets the sensor head
+        to match it.
+
+        Returns:
+            Response string with detected baud rate
+        """
+        response = self.send_command("HTbm", timeout=5.0)
+        return response.strip()
+
+    # =========================================================================
+    # Filter Wheel Common Commands
+    # =========================================================================
+
+    def get_filterwheel_steps_per_position(self) -> int:
+        """
+        Get number of steps between filter wheel positions.
+
+        Returns:
+            Steps per position (typically 142 for 1S, 150 for 2S, 70 for new driver)
+        """
+        response = self.send_command("FWn?")
+        if "!" in response:
+            try:
+                return int(response.split("!")[1].strip())
+            except (ValueError, IndexError):
+                pass
+        return 0
+
+    def set_filterwheel_steps_per_position(self, steps: int) -> bool:
+        """
+        Set number of steps between filter wheel positions.
+
+        Args:
+            steps: Steps per position (142 for 1S, 150 for 2S, 70 for new driver)
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command(f"FWn{steps}")
+        return "FW0" in response
+
+    def get_filterwheel_speed(self) -> int:
+        """
+        Get filter wheel motor speed setting.
+
+        Returns:
+            Speed value (larger = slower)
+        """
+        response = self.send_command("FWs?")
+        if "!" in response:
+            try:
+                return int(response.split("!")[1].strip())
+            except (ValueError, IndexError):
+                pass
+        return 0
+
+    def set_filterwheel_speed(self, speed: int) -> bool:
+        """
+        Set filter wheel motor speed.
+
+        Args:
+            speed: Speed value (200 for new board, 100 for old board, 170 for new driver)
+                   Larger value = slower speed
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command(f"FWs{speed}")
+        return "FW0" in response or "F2m" in response
+
+    # =========================================================================
+    # Power Control Commands
+    # =========================================================================
+
     def power_reset(self, device: str) -> bool:
         """
         Power reset a connected device.
@@ -495,8 +653,8 @@ class HeadSensor(BaseDevice, HelpMixin):
         Args:
             device: Device identifier:
                 - 'TR' or 'tracker': Tracker
-                - 'S1': Spectrometer 1
-                - 'S2': Spectrometer 2
+                - 'S1' or 'spectrometer1': Spectrometer 1
+                - 'S2' or 'spectrometer2': Spectrometer 2
 
         Returns:
             True if successful
@@ -521,6 +679,46 @@ class HeadSensor(BaseDevice, HelpMixin):
             # Generic power reset command format
             response = self.send_command(f"{device_id}s")
             return f"{device_id}0" in response
+
+    def tracker_power_on(self) -> bool:
+        """
+        Turn on the tracker.
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command("TR1")
+        return "TR0" in response
+
+    def tracker_power_off(self) -> bool:
+        """
+        Turn off the tracker.
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command("TR0")
+        return "TR0" in response
+
+    def spectrometer1_power_cycle(self) -> bool:
+        """
+        Power cycle spectrometer 1.
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command("S1s", timeout=10.0)
+        return "S10" in response
+
+    def spectrometer2_power_cycle(self) -> bool:
+        """
+        Power cycle spectrometer 2.
+
+        Returns:
+            True if successful
+        """
+        response = self.send_command("S2s", timeout=10.0)
+        return "S20" in response
 
     def get_status(self) -> dict[str, Any]:
         """

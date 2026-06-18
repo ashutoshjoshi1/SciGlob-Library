@@ -310,7 +310,10 @@ def shadowband_angle_to_position(
     Returns:
         Step position (integer)
     """
-    delta = math.degrees(math.asin(math.sin(math.radians(angle_deg)) * ratio))
+    # Clamp the asin argument: ratio >= 1 (offset >= radius) can push it past
+    # 1.0 and raise a math domain error.
+    sin_arg = max(-1.0, min(1.0, math.sin(math.radians(angle_deg)) * ratio))
+    delta = math.degrees(math.asin(sin_arg))
     alfa = angle_deg - delta
     return int(round((alfa + 90) / resolution))
 
@@ -335,7 +338,10 @@ def position_to_shadowband_angle(
     alfa_rad = math.radians(alfa)
 
     xq = 1 + ratio**2 - 2 * ratio * math.cos(alfa_rad)
-    sbeta = math.sin(alfa_rad) / math.sqrt(xq)
+    # Guard against div-by-zero / sqrt of zero when ratio -> 1 at alfa -> 0,
+    # and clamp the asin argument to its valid domain.
+    xq = max(xq, 1e-12)
+    sbeta = max(-1.0, min(1.0, math.sin(alfa_rad) / math.sqrt(xq)))
     sbangle = math.degrees(math.asin(sbeta))
 
     if xq > (1 - ratio**2):

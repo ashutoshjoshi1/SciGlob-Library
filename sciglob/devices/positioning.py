@@ -154,10 +154,10 @@ class GlobalSatGPS(PositioningSystem):
         if self._connection is None:
             raise DeviceError("Not connected")
 
-        self._protocol["end_char"]
+        end_char = self._protocol["end_char"]
         response_end = self._protocol["response_end_char"]
 
-        self._connection.send_command(command, end_char="")  # Command includes end char
+        self._connection.send_command(command, end_char=end_char)
 
         response = self._connection.read_until(
             terminator=response_end.encode(),

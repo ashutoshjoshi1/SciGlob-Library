@@ -46,7 +46,7 @@ Help:
     >>> hs.list_methods()                 # List methods
 """
 
-__version__ = "0.1.4"
+__version__ = "0.1.6"
 __author__ = "Ashutosh Joshi"
 
 # Core components

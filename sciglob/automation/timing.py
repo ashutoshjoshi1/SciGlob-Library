@@ -333,11 +333,14 @@ class TimeCalculator:
         if azimuth < 0:
             azimuth += 360
 
-        # Calculate lunar phase
-        sun = self.calculate_solar_position(dt)
-        phase_angle = abs(lon - sun.right_ascension - sun.hour_angle)
-        phase = (1 - math.cos(phase_angle * DEG2RAD)) / 2
-        illumination = (1 + math.cos((phase_angle) * DEG2RAD)) / 2
+        # Lunar phase from the geocentric elongation (moon ecliptic longitude
+        # minus the sun's ecliptic longitude). The illuminated fraction is
+        # (1 - cos(elongation)) / 2 (0 at new moon, 1 at full moon); phase runs
+        # 0 -> 1 across the synodic cycle (0 = new moon, 0.5 = full moon).
+        sun_lon = self._sun_coordinates(jd)["ecliptic_longitude"]
+        elongation = (lon - sun_lon) % 360.0
+        illumination = (1 - math.cos(elongation * DEG2RAD)) / 2
+        phase = elongation / 360.0
 
         return LunarPosition(
             zenith_angle=zenith,
@@ -375,6 +378,9 @@ class TimeCalculator:
         # Nautical twilight (zenith = 102 degrees)
         nautical_dawn, nautical_dusk = self._calculate_sunrise_sunset(day_start, zenith_angle=102.0)
 
+        # Moonrise / moonset (horizon crossings of the lunar zenith angle)
+        moonrise, moonset = self._calculate_moon_events(day_start)
+
         return AstronomicalEvents(
             date=day_start,
             latitude=self.latitude,
@@ -386,6 +392,8 @@ class TimeCalculator:
             civil_dusk=civil_dusk,
             nautical_dawn=nautical_dawn,
             nautical_dusk=nautical_dusk,
+            moonrise=moonrise,
+            moonset=moonset,
         )
 
     def _datetime_to_julian(self, dt: datetime) -> float:
@@ -441,6 +449,7 @@ class TimeCalculator:
             "right_ascension": ra,
             "declination": dec,
             "distance": distance,
+            "ecliptic_longitude": lambda_sun % 360,
         }
 
     def _greenwich_mean_sidereal_time(self, jd: float) -> float:
@@ -455,22 +464,27 @@ class TimeCalculator:
         return gmst % 360
 
     def _calculate_solar_noon(self, date: datetime) -> datetime:
-        """Calculate solar noon for a given date."""
-        # Solar noon occurs when the sun crosses the local meridian
-        # Approximation: 12:00 - longitude_offset
+        """Calculate solar noon (the instant the sun crosses the local meridian).
+
+        Solar noon is when the sun's hour angle is zero. Starting from a
+        mean-noon guess, we refine with a few Newton steps using the (verified)
+        solar-position calculation: the sun's hour angle advances at ~15
+        degrees/hour, so the time correction is ``hour_angle / 15`` hours.
+        This converges in 2-3 iterations and avoids the error-prone closed-form
+        equation of time.
+        """
+        # Initial guess: mean solar noon at this longitude.
         offset_hours = -self.longitude / 15.0
-        noon = datetime.combine(date.date(), datetime.min.time(), tzinfo=timezone.utc) + timedelta(
+        guess = datetime.combine(date.date(), datetime.min.time(), tzinfo=timezone.utc) + timedelta(
             hours=12 + offset_hours
         )
 
-        # Refine with equation of time
-        jd = self._datetime_to_julian(noon)
-        sun = self._sun_coordinates(jd)
+        # Drive the hour angle (degrees, normalized to [-180, 180]) to zero.
+        for _ in range(3):
+            hour_angle = self.calculate_solar_position(guess).hour_angle
+            guess = guess - timedelta(hours=hour_angle / 15.0)
 
-        # Equation of time (minutes)
-        eot = 4 * (sun["right_ascension"] - (self.longitude + 180 + 360 * (jd - 2451545.0)) % 360)
-
-        return noon - timedelta(minutes=eot)
+        return guess
 
     def _calculate_sunrise_sunset(
         self,
@@ -518,6 +532,51 @@ class TimeCalculator:
         sunset = solar_noon + timedelta(hours=ha_hours)
 
         return sunrise, sunset
+
+    def _calculate_moon_events(
+        self,
+        date: datetime,
+    ) -> tuple[Optional[datetime], Optional[datetime]]:
+        """Find the first moonrise and moonset within the UTC day.
+
+        Samples the lunar zenith angle across 24 hours and linearly
+        interpolates the horizon (90 deg) crossings. This is a simplified
+        search (no parallax/refraction correction) but adequate for
+        scheduling and, unlike the previous code, actually populates the
+        moonrise/moonset events instead of leaving them unset.
+
+        Returns:
+            (moonrise, moonset) tuple; either may be None if no crossing of
+            that type occurs during the day.
+        """
+        day_start = datetime.combine(date.date(), datetime.min.time(), tzinfo=timezone.utc)
+        step_minutes = 10
+        horizon = 90.0
+
+        moonrise: Optional[datetime] = None
+        moonset: Optional[datetime] = None
+
+        prev_t = day_start
+        prev_zen = self.calculate_lunar_position(prev_t).zenith_angle
+        steps = (24 * 60) // step_minutes
+
+        for i in range(1, steps + 1):
+            t = day_start + timedelta(minutes=step_minutes * i)
+            zen = self.calculate_lunar_position(t).zenith_angle
+
+            if moonrise is None and prev_zen > horizon >= zen:
+                # Crossing from below the horizon to above it -> moonrise.
+                frac = (prev_zen - horizon) / (prev_zen - zen)
+                moonrise = prev_t + timedelta(minutes=step_minutes * frac)
+            elif moonset is None and prev_zen < horizon <= zen:
+                # Crossing from above the horizon to below it -> moonset.
+                frac = (horizon - prev_zen) / (zen - prev_zen)
+                moonset = prev_t + timedelta(minutes=step_minutes * frac)
+
+            prev_t = t
+            prev_zen = zen
+
+        return moonrise, moonset
 
 
 # Convenience functions

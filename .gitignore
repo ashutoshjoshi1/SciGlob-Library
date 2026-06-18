@@ -141,3 +141,6 @@ Thumbs.db
 *.tmp
 .env.local
 .env.*.local
+
+# Credentials — never commit PyPI tokens
+.pypirc

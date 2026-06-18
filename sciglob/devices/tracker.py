@@ -541,7 +541,10 @@ class Tracker(HelpMixin):
         alarms = self.get_motor_alarms()
 
         for axis, (code, message) in alarms.items():
-            if code != 0:
+            # Only positive codes are real motor alarms (see MotorAlarmCode).
+            # get_motor_alarms() returns code == -1 on a read failure, which
+            # must not be reported as an alarm condition.
+            if code > 0:
                 raise MotorAlarmError(
                     f"{axis.capitalize()} motor alarm: {message}",
                     alarm_code=code,

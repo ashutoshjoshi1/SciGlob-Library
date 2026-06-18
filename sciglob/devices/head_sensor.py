@@ -354,7 +354,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         if not self._connected or self._connection is None:
             raise DeviceError("Not connected to head sensor")
 
-        timeout = timeout or self.timeout
+        timeout = timeout if timeout is not None else self.timeout
 
         try:
             response = self._connection.query(

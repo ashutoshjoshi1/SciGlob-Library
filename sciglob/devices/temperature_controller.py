@@ -188,7 +188,10 @@ class TemperatureController(BaseDevice, HelpMixin):
         Returns:
             Response string (without end character)
         """
-        if not self._connected or self._connection is None:
+        # Guard on the connection object only: connect() calls _verify_connection()
+        # (which calls _query) before _connected is set to True, so checking
+        # self._connected here would make every connection attempt fail.
+        if self._connection is None:
             raise DeviceError("Not connected")
 
         end_char = self._protocol["end_char"]

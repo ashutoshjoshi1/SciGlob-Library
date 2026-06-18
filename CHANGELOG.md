@@ -7,10 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Nothing yet
+## [0.1.6] - 2026-06-18
 
-## [0.1.5] - 2024-12-17
+### Fixed
+- **Temperature controller**: `TemperatureController.connect()` no longer fails
+  unconditionally. The connection guard checked `_connected` before verification
+  set it, so every connection attempt raised — the controller was unusable.
+- **Solar timing**: corrected solar noon / sunrise / sunset, which were offset by
+  ~6 hours due to a wrong equation-of-time term. These now derive from the
+  verified solar-position routine (sun's hour angle driven to zero).
+- **Lunar phase**: fixed illuminated fraction and phase. The previous formula
+  depended on sidereal time and oscillated 0→1 within a single day; it now uses
+  the geocentric solar elongation.
+- **Moonrise / moonset**: now computed and populated in `AstronomicalEvents`
+  (previously always `None`, silently disabling every moon-anchored schedule
+  entry). Added `MOON_RISE` / `MOON_SET` handling in the schedule executor.
+- **Tracker alarms**: `check_alarms()` no longer reports a serial read failure
+  (sentinel code `-1`) as a motor alarm; only positive alarm codes raise.
+- **GlobalSat GPS**: `send_command()` now appends the protocol terminator
+  (`\r\n`) instead of sending the command with no line ending.
+- **Head sensor**: an explicit `timeout=0` is now honoured instead of being
+  replaced by the default timeout.
+- **Shadowband**: guarded the angle/position conversions against
+  `ZeroDivisionError` and `math` domain errors at extreme `ratio` values.
+
+### Security
+- Removed `exec()` of `COMMAND` values and replaced `eval()` of loop (`XIJ`)
+  values with `ast.literal_eval()` in the routine executor, eliminating arbitrary
+  code execution from `.rout` files.
+- Added a CPU-spin guard to the schedule entry loop (unlimited repetitions with
+  unknown routine codes previously busy-looped a core).
+
+### Changed
+- Package version is now single-sourced from `sciglob.__version__` and read
+  dynamically by the build backend. This resolves the previous mismatch between
+  `pyproject.toml` (0.1.5) and `sciglob/__init__.py` (0.1.4).
+- Declared the license with the PEP 639 SPDX expression (`license = "MIT"`,
+  `license-files = ["LICENSE"]`); the build now requires `setuptools>=77`.
+
+### Tests
+- Added `tests/test_regression_fixes.py` covering each fix above.
+
+## [0.1.5] - 2025-12-17
 
 ### Added
 - `CommandBuilder` class for constructing device commands programmatically
@@ -30,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security architecture with RBAC implementation
 - 10-week development roadmap
 
-## [0.1.4] - 2024-12-03
+## [0.1.4] - 2025-12-03
 
 ### Added
 - Help system for all device classes (`.help()`, `.list_methods()`, `.list_properties()`)

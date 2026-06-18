@@ -5,6 +5,7 @@ This module provides executors that run routines and schedules
 by sending commands to connected hardware devices.
 """
 
+import ast
 import logging
 import time
 from dataclasses import dataclass, field
@@ -404,15 +405,12 @@ class RoutineExecutor:
     def _execute_custom_command(self, command: RoutineCommand) -> None:
         """Execute a custom COMMAND."""
         value = command.get("VALUE", "")
-        logger.debug(f"Custom command: {value}")
-
-        # Execute as Python code if it looks like it
-        if value.startswith("self.") or "=" in value:
-            # Store references for execution
-            try:
-                exec(value)
-            except Exception as e:
-                logger.warning(f"Custom command error: {e}")
+        # Custom COMMAND values are recorded but deliberately NOT executed:
+        # running arbitrary Python from a routine file is a remote-code-execution
+        # risk. Hardware-specific custom actions should be added as explicit,
+        # named keywords instead.
+        if value:
+            logger.info(f"COMMAND (recorded, not executed): {value}")
 
     def _execute_duration(self, command: RoutineCommand) -> None:
         """Execute a DURATION wait."""
@@ -434,12 +432,12 @@ class RoutineExecutor:
 
         # Parse XIJ values
         if isinstance(xij_value, str):
-            # Try to evaluate as Python expression
+            # Safely parse literal lists/tuples/numbers; never eval arbitrary code.
             try:
-                values = eval(xij_value)
+                values = ast.literal_eval(xij_value)
                 if not isinstance(values, (list, tuple)):
                     values = [values]
-            except Exception:
+            except (ValueError, SyntaxError):
                 values = [xij_value]
         else:
             values = xij_value if isinstance(xij_value, (list, tuple)) else [xij_value]
@@ -668,7 +666,9 @@ class RoutineExecutor:
         distance = command.get("DISTANCE", "NO")
 
         self.context.variables["process_type"] = ptype
-        if distance != "NO":
+        # DISTANCE is parsed to bool False for "NO"/"FALSE"/"OFF"; the literal
+        # default is the string "NO". Treat both as "no target distance".
+        if distance not in (False, "NO"):
             self.context.variables["target_distance"] = distance
 
     def _resolve_value(self, value: Any) -> Any:
@@ -865,6 +865,12 @@ class ScheduleExecutor:
         elif ref in (TimeReference.SOLAR_ZEN_90_PM, TimeReference.SUNSET):
             base_time = self._events.sunset
 
+        elif ref == TimeReference.MOON_RISE:
+            base_time = self._events.moonrise
+
+        elif ref == TimeReference.MOON_SET:
+            base_time = self._events.moonset
+
         elif ref == TimeReference.THEN:
             base_time = previous_end
 
@@ -1005,6 +1011,7 @@ class ScheduleExecutor:
                     break
 
                 # Execute routines
+                executed = 0
                 for code, _ in entry.routine_params:
                     if self._stop_event.is_set():
                         break
@@ -1012,8 +1019,15 @@ class ScheduleExecutor:
                     if code in self.routines:
                         routine = self.routines[code]
                         self.routine_executor.execute(routine)
+                        executed += 1
 
                 iteration += 1
+
+                # Guard against a tight CPU spin when an iteration does no work
+                # (e.g. unlimited repetitions referencing unknown routine codes).
+                # Event.wait is interruptible, so stop() stays responsive.
+                if executed == 0:
+                    self._stop_event.wait(0.5)
 
         finally:
             self._emit_event("on_entry_complete", entry=entry)

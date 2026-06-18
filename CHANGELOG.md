@@ -185,8 +185,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 0.1.5 | 2024-12-17 | Added CommandBuilder, real-time platform architecture docs |
-| 0.1.4 | 2024-12-03 | Added help system and configuration classes |
+| 0.1.6 | 2026-06-18 | Bug fixes: solar/lunar timing, temperature controller, GPS, tracker alarms; removed code execution from routines |
+| 0.1.5 | 2025-12-17 | Added CommandBuilder, real-time platform architecture docs |
+| 0.1.4 | 2025-12-03 | Added help system and configuration classes |
 | 0.1.3 | 2025-12-03 | Updated README URLs |
 | 0.1.2 | 2025-12-03 | Updated author info |
 | 0.1.1 | 2025-12-03 | Fixed PyPI metadata |
@@ -204,7 +205,7 @@ This is the initial public release. No migration required.
 
 ## Links
 
-- [GitHub Repository](https://github.com/SciGlob/SciGlob-Library)
-- [Documentation](https://github.com/SciGlob/SciGlob-Library/blob/main/docs/API_REFERENCE.md)
-- [Issue Tracker](https://github.com/SciGlob/SciGlob-Library/issues)
+- [GitHub Repository](https://github.com/ashutoshjoshi1/SciGlob-Library)
+- [Documentation](https://github.com/ashutoshjoshi1/SciGlob-Library/blob/main/docs/API_REFERENCE.md)
+- [Issue Tracker](https://github.com/ashutoshjoshi1/SciGlob-Library/issues)
 

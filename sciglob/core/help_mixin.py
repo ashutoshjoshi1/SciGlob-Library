@@ -240,7 +240,7 @@ SERIAL PORT CONFIGURATION:
     write_timeout: 20.0 seconds
 
 DOCUMENTATION:
-  Full API Reference: https://github.com/ashutoshjoshi1/SciGlob-Library/docs/API_REFERENCE.md
+  Full API Reference: https://github.com/ashutoshjoshi1/SciGlob-Library/blob/main/docs/API_REFERENCE.md
 
 ================================================================================
 """

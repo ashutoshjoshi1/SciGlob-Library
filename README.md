@@ -306,7 +306,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Documentation
 
-- [Architecture](ARCHITECTURE.md) - Detailed system architecture
+- [API Reference](docs/API_REFERENCE.md) - Full API documentation
+- [Architecture](docs/PLATFORM_ARCHITECTURE.md) - Detailed system architecture
 - [Command Reference](SCIGLOB_COMMAND_REFERENCE.md) - Complete protocol documentation
 - [Library Specification](SCIGLOB_LIBRARY_SPEC.md) - Full implementation specification
 

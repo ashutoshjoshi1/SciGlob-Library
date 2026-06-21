@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum
+from typing import Any, Optional
 
 
 class DeviceType(str, Enum):
@@ -76,6 +77,7 @@ MOTOR_ALARM_MESSAGES: dict[int, str] = {
 class SerialConfig:
     """Serial port configuration."""
 
+    port: Optional[str] = None
     baudrate: int = 9600
     bytesize: int = 8
     parity: str = "N"
@@ -149,7 +151,7 @@ SHADOWBAND_COMMANDS = {
 }
 
 # Sensor reading conversion factors
-SENSOR_CONVERSIONS = {
+SENSOR_CONVERSIONS: dict[str, dict[str, Any]] = {
     "temperature": {"factor": 100.0, "unit": "°C", "error_value": 999.0},
     "humidity": {"factor": 1024.0, "unit": "%", "error_value": -9.0},
     "pressure": {"factor": 100.0, "unit": "mbar", "error_value": -9.0},
@@ -178,7 +180,7 @@ VALID_FILTERS = (
 
 
 # TETech Temperature Controller Protocol
-TETECH_PROTOCOL = {
+TETECH_PROTOCOL: dict[str, Any] = {
     "TETech1": {
         "connection_test": "*0060",
         "end_char": "^",
@@ -220,7 +222,7 @@ TETECH_PROTOCOL = {
 }
 
 # HDC2080EVM Humidity Sensor Protocol
-HDC2080_PROTOCOL = {
+HDC2080_PROTOCOL: dict[str, Any] = {
     "id_command": "?",
     "initialize_command": "4",
     "temperature_command": "1",
@@ -231,7 +233,7 @@ HDC2080_PROTOCOL = {
 }
 
 # GPS Protocol
-GPS_PROTOCOL = {
+GPS_PROTOCOL: dict[str, Any] = {
     "Novatel": {
         "end_char": "\r",
         "response_end_char": "\r\n[USB1]",

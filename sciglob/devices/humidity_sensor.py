@@ -148,7 +148,7 @@ class HumiditySensor(BaseDevice, HelpMixin):
 
         self._connection.send_command(command, end_char=end_char)
 
-        response = self._connection.read_until(
+        response: bytes = self._connection.read_until(
             terminator=response_end.encode(),
             timeout=TIMING_CONFIG["sensor_reading_timeout"],
         )
@@ -245,7 +245,7 @@ class HumiditySensor(BaseDevice, HelpMixin):
 
     def get_status(self) -> dict[str, Any]:
         """Get humidity sensor status."""
-        status = {
+        status: dict[str, Any] = {
             "connected": self._connected,
             "initialized": self._initialized,
             "port": self.port,

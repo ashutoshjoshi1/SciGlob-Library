@@ -97,7 +97,7 @@ class TemperatureController(BaseDevice, HelpMixin):
 
         self._controller_type = controller_type
         self._protocol = TETECH_PROTOCOL[controller_type]
-        self._nbits = self._protocol["nbits"]
+        self._nbits: int = self._protocol["nbits"]
 
     @property
     def controller_type(self) -> str:
@@ -200,7 +200,7 @@ class TemperatureController(BaseDevice, HelpMixin):
         self._connection.send_command(command, end_char="\r")
 
         # Read until end character
-        response = self._connection.read_until(
+        response: bytes = self._connection.read_until(
             terminator=end_char.encode(),
             timeout=TIMING_CONFIG["standard_timeout"],
         )

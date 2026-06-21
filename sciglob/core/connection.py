@@ -84,13 +84,13 @@ class SerialConnection:
 
     def flush_buffers(self) -> None:
         """Flush both input and output buffers."""
-        if self.is_open:
+        if self._serial is not None and self._serial.is_open:
             self._serial.reset_input_buffer()
             self._serial.reset_output_buffer()
 
     def read_buffer(self) -> bytes:
         """Read all available data from input buffer."""
-        if not self.is_open:
+        if self._serial is None or not self._serial.is_open:
             raise ConnectionError("Serial port is not open")
 
         data = b""
@@ -109,11 +109,12 @@ class SerialConnection:
         Returns:
             Number of bytes written
         """
-        if not self.is_open:
+        if self._serial is None or not self._serial.is_open:
             raise ConnectionError("Serial port is not open")
 
         self.logger.debug(f"TX: {data!r}")
-        return self._serial.write(data)
+        bytes_written: int = self._serial.write(data)
+        return bytes_written
 
     def read(self, size: int = 1, timeout: Optional[float] = None) -> bytes:
         """
@@ -126,7 +127,7 @@ class SerialConnection:
         Returns:
             Bytes read from port
         """
-        if not self.is_open:
+        if self._serial is None or not self._serial.is_open:
             raise ConnectionError("Serial port is not open")
 
         if timeout is not None:
@@ -134,7 +135,7 @@ class SerialConnection:
             self._serial.timeout = timeout
 
         try:
-            data = self._serial.read(size)
+            data: bytes = self._serial.read(size)
             self.logger.debug(f"RX: {data!r}")
             return data
         finally:
@@ -158,7 +159,7 @@ class SerialConnection:
         Returns:
             Data read including terminator (if found)
         """
-        if not self.is_open:
+        if self._serial is None or not self._serial.is_open:
             raise ConnectionError("Serial port is not open")
 
         start_time = time.time()

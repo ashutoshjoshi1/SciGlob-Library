@@ -159,7 +159,7 @@ class GlobalSatGPS(PositioningSystem):
 
         self._connection.send_command(command, end_char=end_char)
 
-        response = self._connection.read_until(
+        response: bytes = self._connection.read_until(
             terminator=response_end.encode(),
             timeout=self.timeout,
         )
@@ -290,7 +290,7 @@ class GlobalSatGPS(PositioningSystem):
 
     def get_status(self) -> dict[str, Any]:
         """Get GPS status."""
-        status = {
+        status: dict[str, Any] = {
             "connected": self._connected,
             "configured": self._configured,
             "port": self.port,
@@ -426,7 +426,7 @@ class NovatelGPS(PositioningSystem):
 
         self._connection.send_command(command, end_char=end_char)
 
-        response = self._connection.read_until(
+        response: bytes = self._connection.read_until(
             terminator=response_end.encode(),
             timeout=self.timeout,
             max_bytes=1024,
@@ -610,7 +610,7 @@ class NovatelGPS(PositioningSystem):
 
     def get_status(self) -> dict[str, Any]:
         """Get Novatel status."""
-        status = {
+        status: dict[str, Any] = {
             "connected": self._connected,
             "configured": self._configured,
             "port": self.port,

@@ -210,7 +210,7 @@ class ScheduleEntry:
 
         if self.condition == ScheduleCondition.MONTH_DAY:
             if self.condition_value is not None:
-                return current_time.day == self.condition_value
+                return bool(current_time.day == self.condition_value)
             return True
 
         if self.condition == ScheduleCondition.MOON_VISIBLE:

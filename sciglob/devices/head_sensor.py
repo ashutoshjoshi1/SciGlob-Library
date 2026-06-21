@@ -6,6 +6,9 @@ from sciglob.core.base import BaseDevice
 
 if TYPE_CHECKING:
     from sciglob.config import HeadSensorConfig
+    from sciglob.devices.filter_wheel import FilterWheel
+    from sciglob.devices.shadowband import Shadowband
+    from sciglob.devices.tracker import Tracker
 from sciglob.core.connection import SerialConnection, parse_sensor_value
 from sciglob.core.exceptions import (
     CommunicationError,
@@ -161,10 +164,10 @@ class HeadSensor(BaseDevice, HelpMixin):
         self._home_position = home_position or [0.0, 180.0]  # [zenith_home, azimuth_home]
 
         # Child device references (lazy initialization)
-        self._tracker = None
-        self._filter_wheel_1 = None
-        self._filter_wheel_2 = None
-        self._shadowband = None
+        self._tracker: Optional[Tracker] = None
+        self._filter_wheel_1: Optional[FilterWheel] = None
+        self._filter_wheel_2: Optional[FilterWheel] = None
+        self._shadowband: Optional[Shadowband] = None
 
     @property
     def device_id(self) -> Optional[str]:
@@ -357,7 +360,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         timeout = timeout if timeout is not None else self.timeout
 
         try:
-            response = self._connection.query(
+            response: str = self._connection.query(
                 command=command,
                 end_char="\r",
                 response_end_char="\n",
@@ -403,7 +406,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         )
 
         if value is None:
-            return SENSOR_CONVERSIONS["temperature"]["error_value"]
+            return float(SENSOR_CONVERSIONS["temperature"]["error_value"])
         return value
 
     def get_humidity(self) -> float:
@@ -429,7 +432,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         )
 
         if value is None:
-            return SENSOR_CONVERSIONS["humidity"]["error_value"]
+            return float(SENSOR_CONVERSIONS["humidity"]["error_value"])
         return value
 
     def get_pressure(self) -> float:
@@ -455,7 +458,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         )
 
         if value is None:
-            return SENSOR_CONVERSIONS["pressure"]["error_value"]
+            return float(SENSOR_CONVERSIONS["pressure"]["error_value"])
         return value
 
     def get_all_sensors(self) -> dict[str, float]:
@@ -727,7 +730,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         Returns:
             Dictionary with status information
         """
-        status = {
+        status: dict[str, Any] = {
             "connected": self._connected,
             "port": self.port,
             "device_id": self._device_id,

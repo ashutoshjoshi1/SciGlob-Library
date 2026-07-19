@@ -38,6 +38,7 @@ from sciglob.config.hardware import (
     TemperatureControllerConfig,
     print_help,
 )
+from sciglob.config.iof import config_from_iof, parse_iof
 
 __all__ = [
     "SerialConfig",
@@ -51,4 +52,6 @@ __all__ = [
     "DEFAULT_TETECH1_CONFIG",
     "DEFAULT_TETECH2_CONFIG",
     "print_help",
+    "config_from_iof",
+    "parse_iof",
 ]

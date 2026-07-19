@@ -107,8 +107,75 @@ class RecoveryError(SciGlobError):
         self.recovery_level = recovery_level
 
 
+class RecoveryFailed(RecoveryError):
+    """Raised when a device recovery ladder is exhausted without success.
+
+    Subclass of :class:`RecoveryError` kept as a distinct name so callers
+    can catch ladder exhaustion separately from single-step recovery errors.
+    """
+
+    def __init__(self, message: str, recovery_level: int = -1, device: Optional[str] = None):
+        super().__init__(message, recovery_level)
+        self.device = device
+
+
+class PortCollisionError(ConnectionError):
+    """Raised when a port is already owned by another device in this process.
+
+    Field lesson (unit 071): two device objects silently sharing one COM port
+    corrupt each other's answer streams. The library refuses to open a port
+    that is already claimed and names both devices in the message.
+    """
+
+    def __init__(self, port: str, requesting_device: str, owning_device: str):
+        self.port = port
+        self.requesting_device = requesting_device
+        self.owning_device = owning_device
+        super().__init__(
+            f"Port {port} requested by '{requesting_device}' is already owned by "
+            f"'{owning_device}' in this process. Close the owning device first or "
+            f"assign a different port."
+        )
+
+
+class DeviceIdentityError(ConnectionError):
+    """Raised when a device on a port fails identification.
+
+    Carries the raw answer so callers can diagnose what actually answered
+    (e.g. an ASB found where an SBHS was expected — error code 98).
+    """
+
+    def __init__(self, message: str, answer: Optional[str] = None, error_code: Optional[int] = None):
+        super().__init__(message)
+        self.answer = answer
+        self.error_code = error_code
+
+
 class SpectrometerError(DeviceError):
     """Raised when a spectrometer operation fails."""
+
+    pass
+
+
+class SessionRestartRequired(SpectrometerError):
+    """Sentinel escalation: Tier A recovery exhausted with a wedged AVS session.
+
+    The coordinator must quiesce *all* spectrometer channels, then restart the
+    process-wide AVS session (AVS_Done -> AVS_Init) and reactivate every
+    channel. Never handled per-device.
+    """
+
+    pass
+
+
+class RelayBoardError(DeviceError):
+    """Raised when a relay board operation fails."""
+
+    pass
+
+
+class ImuError(DeviceError):
+    """Raised when an IMU operation fails."""
 
     pass
 

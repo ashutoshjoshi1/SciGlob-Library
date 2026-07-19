@@ -56,6 +56,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Vendor-heavy hardware subsystems are isolated behind extras. The core
+# install depends only on pyserial + pyyaml. The Avantes DLL ships with the
+# instrument and is loaded via ctypes at runtime — it is never vendored here;
+# numpy is an optional convenience (spectra fall back to array('d')/list).
+spectrometer = [
+    "numpy>=1.20",
+]
+imu = [
+    "ximu3>=1.0",
+]
+camera = [
+    "opencv-python>=4.5",
+]
+hardware = [
+    "sciglob[spectrometer,imu,camera]",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -74,7 +90,7 @@ docs = [
     "mkdocstrings[python]>=0.24",
 ]
 all = [
-    "sciglob[dev,docs]",
+    "sciglob[spectrometer,imu,camera,dev,docs]",
 ]
 
 [project.urls]

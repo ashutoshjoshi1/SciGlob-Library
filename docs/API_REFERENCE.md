@@ -1737,7 +1737,33 @@ POL0 - POL359   - Polarizer angles (0-359°)
 
 ---
 
-*Document Version: 1.0*  
-*SciGlob Library Version: 0.1.4*  
-*Last Updated: 2024*
+## 0.2.0 additions
+
+Full device coverage was added in 0.2.0. Public classes (all with a `Simulated*`
+twin) and where to read their contract:
+
+| Class | Module | Extra | Reference |
+|---|---|---|---|
+| `Instrument` | `sciglob.instrument` | — | README "Instrument facade"; `examples/full_instrument.py` |
+| `SBHS`, `ASB` | `sciglob.devices` | — | Command Ref B.1 |
+| `SRB` | `sciglob.devices` | — | Command Ref B.2 |
+| `TemperatureController` (TETech1090) | `sciglob.devices` | — | Command Ref B.3 |
+| `RelayBoard` | `sciglob.devices` | — | Command Ref B.4 |
+| `RS485Tracker` | `sciglob.devices` | — | Command Ref B.5 |
+| `AvantesSpectrometer`, `SimulatedSpectrometer`, `AvaSession` | `sciglob.spectrometers` | `[spectrometer]` | `docs/RELIABILITY.md` §4; `examples/spectrometer_measurement.py` |
+| `Camera` | `sciglob.camera` | `[camera]` | Command Ref (camera) |
+| `IMU` | `sciglob.imu` | `[imu]` | `docs/RELIABILITY.md` §6 |
+
+New exceptions: `PortCollisionError`, `DeviceIdentityError`, `RecoveryFailed`,
+`SpectrometerError`, `SessionRestartRequired`, `RelayBoardError`, `ImuError`,
+`CameraError`. New core helpers: `sciglob.SimulatedTransport`,
+`sciglob.make_responder`, `sciglob.core.connection.PortRegistry`.
+
+The 0.1.6 public API above is unchanged.
+
+---
+
+*Document Version: 2.0*  
+*SciGlob Library Version: 0.2.0*  
+*Last Updated: 2026-07*
 

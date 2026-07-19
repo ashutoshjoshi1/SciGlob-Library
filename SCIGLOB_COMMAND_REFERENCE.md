@@ -1586,8 +1586,126 @@ gps.close()
 
 ---
 
-*This document provides the complete command reference for implementing the SciGlob Library. Use in conjunction with `SCIGLOB_LIBRARY_SPEC.md` for full implementation details.*
+---
 
-*Document Version: 1.0*
-*Last Updated: 2024*
+# Appendix B: v0.2.0 Device Wire Protocols
+
+Wire tables for the subsystems added in 0.2.0, distilled from the field-proven
+NewBlick/Blick and Pandora2.0 codebases and verified against source. This
+section is the protocol reference for the new drivers.
+
+## B.1 SBHS / ASB — ESP32 JSON sensor boxes
+
+- 9600 8N1, question terminator `\r`, **answer terminator `\r\n`**, latin-1.
+- Open ESP32-safe: `dsrdtr=False`, then assert DTR + RTS. Never pulse reset on a
+  normal open. `reset_pulse()` = drop DTR 0.5 s then re-assert (explicit recovery
+  only, throttle ≥ 600 s). Allow an ~8 s answer window; parse the **last** complete
+  JSON record in the buffer; cache the record ~10 s.
+
+| Command | Function | Answer (JSON line) |
+|---|---|---|
+| `v` | identify | `{"Hardware":3,"Firmware":..,"UUID":"..","Sensors":[{"ID":"BME280","Temperature":..,"Humidity":..,"Pressure":..}]}` |
+| `T` | temperature | full sensor record (as above) |
+| `H` | humidity | full sensor record |
+| `P` | pressure | full sensor record |
+| `AP` | ambient pressure (ASB only) | record with `{"ID":"MPRLS","Pressure":..}` |
+
+- **Hardware discriminator:** SBHS = `"Hardware":3`; ASB = `"Hardware":4`.
+- **Identification (v0.0.8.11):** match `"Hardware":N` first, configured-ID substring
+  second; an empty configured ID must still identify via `Hardware:N`.
+- **Error codes:** 0 OK · 1 wrong ID · 2 init failure · 3 humidity parse · 4 temperature
+  parse · 5 pressure parse · **98 wrong hardware type on port** · 99 low-level serial.
+
+## B.2 SRB — SciGlobSRB1
+
+- 9600 8N1, question terminator `\r`, **answer terminator `\r`** (bare CR, not `\r\n`).
+
+| Command | Function | Answer |
+|---|---|---|
+| `?` | identify | contains `ready` |
+| `H1` | humidity | `Humidity(%):<v>` |
+| `T1` | temperature | `Temperature(degC):<v>` |
+| `P1` | pressure | `Pressure(hPa):<v>` |
+
+Value = `float` after the first `:`. Sentinels on failed read: humidity/pressure `-9`,
+temperature `999`. Error table = SBHS table incl. code 5.
+
+## B.3 TETech1090 — `#`-framed temperature controller
+
+- 19200 baud, terminator `\r`. Frame: `#` + address `000000` + payload + **4 hex
+  CRC** + CR. Answers use prefix `!`.
+- **CRC = CRC-16/XMODEM** (poly `0x1021`, init `0x0000`, MSB-first, no reflect, no
+  final XOR) over the whole frame including the leading `#`.
+- Values are **IEEE-754 float32** rendered as 8 hex chars, big-endian on the wire
+  (20.0 → `41A00000`).
+
+| Payload | Function | Verified frame CRC |
+|---|---|---|
+| `?VR006401` | query device type (identify) | `#000000?VR006401` → `A912` |
+| `?VR0BB801` | get setpoint | `0DF2` |
+| `?VR03E801` | get object temperature | `EB08` |
+| `?VR03E901` | get sink temperature | `DC38` |
+| `?VR0BC201` | get proportional bandwidth (Kp) | `BC87` |
+| `?VR0BC301` | get integral gain (Ti) | `8BB7` |
+| `VS0BB801` | set target temperature | (computed) |
+| `VS07DA01` | enable output | (computed) |
+| `VS0BC201/VS0BC301/VS0BC401` | set P / I / D | (computed) |
+
+Conversions vs user units: `Kp = 1/PB`, `Ti = 1/(PB·Ki)`. TETech1/TETech2
+(`*`-framed, `^` terminator, additive checksum) are unchanged.
+
+## B.4 Samirob relay board — binary protocol
+
+- 9600 baud, fixed **4-byte frames**, no terminator:
+  `[0xA0, channel(1-based), opcode, checksum=(b0+b1+b2) & 0xFF]`.
+
+| Opcode | Action |
+|---|---|
+| `0x00` | off (silent) |
+| `0x01` | on (silent) |
+| `0x02` | off |
+| `0x03` | on |
+| `0x04` | toggle |
+| `0x05` | query → 4-byte echo `[0xA0, ch, state, cks]` |
+
+Validate the checksum on every echo frame.
+
+## B.5 Direct-RS485 tracker — Oriental Motor AZ/AZD (Modbus RTU)
+
+- One RS-485 bus, **parity EVEN, 1 stop bit**, 0.5 s timeout. Convention:
+  zenith = slave 1, azimuth = slave 2 (configurable). Function codes 0x03/0x06/0x10;
+  32-bit values big-endian across register pairs; **CRC-16/Modbus** (poly `0xA001`,
+  LSB-first).
+
+| Register | Meaning | Bits / notes |
+|---|---|---|
+| `0x0058` | software version / direct-data block | type 1 = absolute, trigger = 1 |
+| `0x007D` | remote-I/O command word | START `0x0008`, HOME `0x0010`, STOP `0x0020`, FREE `0x0040`, ALM-RST `0x0080` |
+| `0x007F` | status word | HOME-END `0x0010`, READY `0x0020`, ALM-A `0x0080`, MOVE `0x0800` |
+| `0x00CC` | feedback position | 32-bit |
+| `0x0080` | alarm code | see spec alarm table |
+| `0x00F8/0x00FA/0x00FC` | driver/motor temp, supply voltage | — |
+
+Motion defaults: speed 3000 Hz, accel/decel 1000 ms/kHz, operating current 50 %.
+Homing = start-home per axis, then poll HOME-END + READY. Exposed through the same
+`Tracker` facade (`move_to`, `home`, `get_position`, `check_alarms`); device-reported
+failures are returned as typed results, not raised (exceptions reserved for transport).
+
+## B.6 Head-sensor additions
+
+| Command | Function | Answer |
+|---|---|---|
+| `S1s` / `S2s` | spectrometer 1/2 power-cycle relay | error code |
+| `MZa?` / `MAa?` | zenith/azimuth motor alarm | `Alarm Code = <N>` |
+| `MZd?` `MZm?` / `MAd?` `MAm?` | motor driver/motor temperature (÷10) | `MZ!`/`MA!` + int |
+
+`spec_power_cycle(1|2)` fires the registered power-cycle hook (which marks an
+attached spectrometer's handle dead) **before** the relay drops USB power.
+
+---
+
+*This document provides the complete command reference for implementing the SciGlob Library. Use in conjunction with `SCIGLOB_LIBRARY_SPEC.md` for full implementation details, and `docs/RELIABILITY.md` for the reliability doctrine behind the new drivers.*
+
+*Document Version: 2.0*
+*Last Updated: 2026-07*
 

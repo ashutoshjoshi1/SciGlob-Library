@@ -1384,6 +1384,35 @@ except PositionError as e:
 
 ---
 
-*Document Version: 1.0*  
-*SciGlob Library Version: 0.1.4*
+## 0.2.0 — New devices & the Instrument facade
+
+```python
+from sciglob import Instrument
+inst = Instrument.from_yaml("pandora.yaml")     # or .from_iof(...), or simulated=True
+with inst:
+    inst.tracker.move_to(zenith=45, azimuth=180)
+    inst.spectrometer.set_integration_time(200); s = inst.spectrometer.measure(10)
+    print(inst.status())                        # per-device connected/simulated/error
+
+from sciglob import SBHS, ASB, SRB, RelayBoard, RS485Tracker
+SBHS(port="COM8")            # .get_temperature()/.get_humidity()/.get_pressure()/.reset_pulse()
+ASB(port="COM9")             # + .get_ambient_pressure()  (MPRLS)
+SRB(port="COM11")            # .get_all_sensors()
+RelayBoard(port="COM12", nrelays=4)   # .on(ch)/.off(ch)/.toggle(ch)/.state(ch)
+RS485Tracker(port="COM10", zenith_slave=1, azimuth_slave=2)   # Tracker facade over Modbus
+
+from sciglob.spectrometers import AvantesSpectrometer, get_session   # pip install sciglob[spectrometer]
+from sciglob.camera import Camera                                    # pip install sciglob[camera]
+from sciglob.imu import IMU                                          # pip install sciglob[imu]
+```
+
+Every device has a `Simulated*` twin (or `simulated=True` on the facade) so all
+of the above runs with no hardware. See `docs/RELIABILITY.md` for the ESP32 and
+Avantes reliability doctrine, and `SCIGLOB_COMMAND_REFERENCE.md` Appendix B for
+the wire tables.
+
+---
+
+*Document Version: 2.0*  
+*SciGlob Library Version: 0.2.0*
 

@@ -14,9 +14,17 @@ class DeviceType(str, Enum):
     DIRECTED_PERCEPTIONS = "Directed Perceptions"
     TETECH1 = "TETech1"
     TETECH2 = "TETech2"
+    TETECH1090 = "TETech1090"
     HDC2080EVM = "HDC2080EVM"
     NOVATEL = "Novatel"
     GLOBALSAT = "GlobalSat"
+    SBHS = "SBHS"
+    ASB = "ASB"
+    SRB = "SciGlobSRB1"
+    SAMIROB = "Samirob"
+    ORIENTAL_MOTOR_AZD = "OrientalMotorAZD"
+    AVANTES = "Ava1"
+    XIMU3 = "xIMU3"
 
 
 class ErrorCode(IntEnum):
@@ -65,11 +73,29 @@ ERROR_MESSAGES: dict[int, str] = {
 MOTOR_ALARM_MESSAGES: dict[int, str] = {
     0: "No alarm",
     10: "Excessive position deviation",
+    21: "Motor driver overheating",
+    22: "Overvoltage in the motor driver",
+    23: "Undervoltage in the motor driver",
     26: "Motor overheating",
     30: "Load exceeding maximum configured torque",
+    33: "Absolute position error - set home position again",
+    41: "Data stored in the motor driver eeprom was damaged",
     42: "Absolute position sensor error at power on",
     72: "Wrap setting parameter error",
     84: "RS-485 communication error",
+}
+
+# ESP32 JSON sensor boxes (SBHS/ASB) and SRB error codes
+# (Blick blick_serial.py sbhs/srb errcodes tables; 5 and 98 per field doctrine)
+ESP32_SENSOR_ERROR_MESSAGES: dict[int, str] = {
+    0: "OK",
+    1: "Wrong ID response",
+    2: "Could not initialize device (could not stop data stream)",
+    3: "Could not understand humidity reading",
+    4: "Could not understand temperature reading",
+    5: "Could not understand pressure reading",
+    98: "Wrong hardware type on port (SBHS found where ASB expected, or vice versa)",
+    99: "Low level serial communication error",
 }
 
 
@@ -270,6 +296,21 @@ TIMING_CONFIG = {
     "max_recovery_level": 18,
     "luftblick_soft_reset_wait": 15.0,
     "luftblick_power_reset_wait": 30.0,
+    # Field-verified per-action timeouts (Blick op.maxwaits registry)
+    "id_probe_timeout": 0.4,  # maxwaits[9]: port-scan identification probe
+    "fast_answer_timeout": 2.0,  # maxwaits[1]: check-comm / alarm queries
+    "sensor_read_timeout": 4.0,  # maxwaits[27]: head sensor readings (raised from 2s in field)
+    "device_action_timeout": 12.0,  # maxwaits[3]: FW moves, resets, power resets, TC/SBHS/SRB ops
+    "tracker_answer_timeout": 30.0,  # maxwaits[2]
+    # ESP32 (SBHS/ASB) doctrine
+    "esp32_answer_timeout": 8.0,  # answers can be slow; allow a wide window
+    "esp32_record_cache": 10.0,  # one JSON record serves sibling quantities
+    "esp32_reset_throttle": 600.0,  # min seconds between automatic reset pulses
+    "esp32_reset_hold": 0.5,  # reset-pulse DTR-low hold
+    # Recovery ladder holds (Blick maxwaits[13]/[16])
+    "dtr_cycle_hold": 3.0,
+    "port_reopen_settle": 3.0,
+    "wait_level_delay": 60.0,
 }
 
 

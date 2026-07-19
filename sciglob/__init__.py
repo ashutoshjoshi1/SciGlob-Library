@@ -46,7 +46,7 @@ Help:
     >>> hs.list_methods()                 # List methods
 """
 
-__version__ = "0.1.6"
+__version__ = "0.2.0"
 __author__ = "Ashutosh Joshi"
 
 # Core components
@@ -105,18 +105,26 @@ from sciglob.core.commands import (
     print_command_reference,
 )
 from sciglob.core.exceptions import (
+    CameraError,
     CommunicationError,
     ConfigurationError,
     ConnectionError,
     DeviceError,
+    DeviceIdentityError,
     FilterWheelError,
     HomingError,
+    ImuError,
     MotorAlarmError,
     MotorError,
+    PortCollisionError,
     PositionError,
     RecoveryError,
+    RecoveryFailed,
+    RelayBoardError,
     SciGlobError,
     SensorError,
+    SessionRestartRequired,
+    SpectrometerError,
     TimeoutError,
     TrackerError,
 )
@@ -133,15 +141,29 @@ from sciglob.core.utils import (
     normalize_azimuth,
     steps_to_degrees,
 )
-from sciglob.devices.filter_wheel import FilterWheel
+from sciglob.core.simulation import SimulatedTransport, make_responder
 
 # Devices
-from sciglob.devices.head_sensor import HeadSensor
+from sciglob.devices.asb import ASB, SimulatedASB
+from sciglob.devices.filter_wheel import FilterWheel
+from sciglob.devices.head_sensor import HeadSensor, SimulatedHeadSensor
 from sciglob.devices.humidity_sensor import HumiditySensor
 from sciglob.devices.positioning import GlobalSatGPS, NovatelGPS, PositioningSystem
+from sciglob.devices.relay_board import RelayBoard, SimulatedRelayBoard
+from sciglob.devices.rs485_tracker import RS485Tracker, SimulatedRS485Tracker
+from sciglob.devices.sbhs import SBHS, SensorRecord, SimulatedSBHS
 from sciglob.devices.shadowband import Shadowband
+from sciglob.devices.srb import SRB, SimulatedSRB
 from sciglob.devices.temperature_controller import TemperatureController
 from sciglob.devices.tracker import Tracker
+
+# Top-level facade
+from sciglob.instrument import Instrument
+
+# Optional-extra subsystems (camera / imu / spectrometers) import their vendor
+# dependencies lazily, so these modules themselves import fine without the
+# extras installed; a clear error is raised only when a real backend is used.
+from sciglob import camera, imu, spectrometers  # noqa: E402
 
 
 def help():
@@ -182,6 +204,14 @@ __all__ = [
     "MotorAlarmError",
     "SensorError",
     "RecoveryError",
+    "RecoveryFailed",
+    "PortCollisionError",
+    "DeviceIdentityError",
+    "SpectrometerError",
+    "SessionRestartRequired",
+    "RelayBoardError",
+    "ImuError",
+    "CameraError",
     # Protocols
     "DeviceType",
     "ErrorCode",
@@ -202,6 +232,7 @@ __all__ = [
     "HardwareConfig",
     # Devices
     "HeadSensor",
+    "SimulatedHeadSensor",
     "Tracker",
     "FilterWheel",
     "Shadowband",
@@ -210,6 +241,25 @@ __all__ = [
     "PositioningSystem",
     "GlobalSatGPS",
     "NovatelGPS",
+    # New devices (0.2.0)
+    "SRB",
+    "SimulatedSRB",
+    "SBHS",
+    "SimulatedSBHS",
+    "SensorRecord",
+    "ASB",
+    "SimulatedASB",
+    "RelayBoard",
+    "SimulatedRelayBoard",
+    "RS485Tracker",
+    "SimulatedRS485Tracker",
+    # Facade + simulation + optional subsystems
+    "Instrument",
+    "SimulatedTransport",
+    "make_responder",
+    "camera",
+    "imu",
+    "spectrometers",
     # Automation - Routines
     "Routine",
     "RoutineCommand",

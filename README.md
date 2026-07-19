@@ -9,34 +9,124 @@
 
 ## Overview
 
-SciGlob Library provides a unified Python interface for controlling scientific instruments used in atmospheric monitoring systems, including:
+SciGlob Library provides a single, unified Python interface to **every** piece
+of hardware in a SciGlob / Pandora-class instrument — talk to the instrument in
+a few lines of code, without knowing wire protocols. Every device has a real
+driver **and** a simulation twin, so tests and development run with no hardware.
 
-| Component | Description | Protocol |
-|-----------|-------------|----------|
-| **Head Sensor** | Main communication hub (SciGlobHSN1, SciGlobHSN2) | RS-232 |
-| **Tracker** | Azimuth/Zenith motor control (Directed Perceptions, LuftBlickTR1) | via Head Sensor |
-| **Filter Wheels** | FW1, FW2 with 9 positions each | via Head Sensor |
-| **Shadowband** | Shadowband arm positioning | via Head Sensor |
-| **Temperature Controller** | TETech1 (16-bit), TETech2 (32-bit) | RS-232 |
-| **Humidity Sensor** | HDC2080EVM | RS-232 |
-| **GPS/Positioning** | GlobalSat (GPS), Novatel (GPS+Gyro) | RS-232 |
+| # | Subsystem | Class | Protocol | Extra |
+|---|-----------|-------|----------|-------|
+| 1 | **Head Sensor** (SciGlobHSN1/HSN2) | `HeadSensor` | RS-232 | — |
+| 2 | **Tracker** via head sensor (Directed Perceptions, LuftBlickTR1) | `Tracker` | via Head Sensor | — |
+| 3 | **Filter Wheels** FW1/FW2 + Shadowband | `FilterWheel`, `Shadowband` | via Head Sensor | — |
+| 4 | **Temperature Controllers** TETech1/TETech2/**TETech1090** | `TemperatureController` | RS-232 | — |
+| 5 | **Humidity Sensor** HDC2080EVM | `HumiditySensor` | RS-232 | — |
+| 6 | **GPS/Positioning** GlobalSat, Novatel (GPS+gyro) | `GlobalSatGPS`, `NovatelGPS` | RS-232 | — |
+| 7 | **SBHS** — Spec-Box Humidity Sensor (ESP32, JSON) | `SBHS` | RS-232 (JSON) | — |
+| 8 | **ASB** — Air Sensors Box (ESP32, dual BME280 + MPRLS) | `ASB` | RS-232 (JSON) | — |
+| 9 | **SRB** — SciGlobSRB1 sensors-reading board | `SRB` | RS-232 | — |
+| 10 | **Direct-RS485 tracker** (Oriental Motor AZ/AZD, Modbus RTU) | `RS485Tracker` | RS-485 Modbus | — |
+| 11 | **Relay board** (Samirob 4-channel) | `RelayBoard` | RS-232 (binary) | — |
+| 12 | **Avantes spectrometer** (AvaSpec DLL) | `AvantesSpectrometer` | ctypes/USB | `[spectrometer]` |
+| 13 | **Camera** (OpenCV / simulation) | `Camera` | OpenCV | `[camera]` |
+| 14 | **Head-mounted IMU** (xIMU3) | `IMU` | xIMU3 SDK | `[imu]` |
+
+The top-level **`Instrument`** facade opens an entire instrument from one YAML
+(or IOF) file, degrades gracefully when a device is unplugged, and reports a
+per-device status map.
 
 ---
 
 ## Installation
+
+```bash
+pip install sciglob
+```
+
+The core install depends only on `pyserial` + `pyyaml`. Vendor-heavy subsystems
+are isolated behind extras:
+
+```bash
+pip install "sciglob[spectrometer]"   # Avantes (numpy for spectra; DLL ships with the instrument)
+pip install "sciglob[imu]"            # xIMU3 head IMU
+pip install "sciglob[camera]"         # OpenCV camera
+pip install "sciglob[hardware]"       # all three hardware extras
+```
 
 ### From Source
 
 ```bash
 git clone https://github.com/ashutoshjoshi1/SciGlob-Library.git
 cd SciGlob-Library
-pip install -e .
+pip install -e ".[dev]"
 ```
 
-### With Development Dependencies
+---
 
-```bash
-pip install -e ".[dev]"
+## The Instrument facade — talk to all hardware at once
+
+```python
+from sciglob import Instrument
+
+# Open a whole instrument from one config; missing devices degrade gracefully.
+inst = Instrument.from_yaml("pandora101.yaml")   # or Instrument.from_iof("Pandora101_OF.txt")
+with inst:
+    inst.tracker.move_to(zenith=45.0, azimuth=180.0)
+    inst.filter_wheel_1.set_filter("U340")
+
+    inst.spectrometer.set_integration_time(200)   # ms
+    spectrum = inst.spectrometer.measure(10)       # 10 accumulated cycles
+
+    rh = inst.sbhs.get_humidity()
+    inst.head_sensor.spec_power_cycle(1)           # auto-marks the spectrometer first
+
+    print(inst.status())                           # {'head_sensor': {'state': 'connected'}, ...}
+```
+
+Run it entirely in software (no hardware attached) with `simulated=True`:
+
+```python
+inst = Instrument.from_yaml("pandora101.yaml", simulated=True)
+```
+
+### New device quick-starts
+
+```python
+from sciglob import SBHS, ASB, SRB, RelayBoard, RS485Tracker
+
+# ESP32 JSON sensor boxes
+with SBHS(port="COM8") as sbhs:
+    print(sbhs.get_temperature(), sbhs.get_humidity(), sbhs.get_pressure())
+with ASB(port="COM9") as asb:
+    print(asb.get_ambient_pressure())     # MPRLS
+
+# SciGlobSRB1 board
+with SRB(port="COM11") as srb:
+    print(srb.get_all_sensors())
+
+# Samirob relay board
+board = RelayBoard(port="COM12", nrelays=4)
+board.connect(); board.on(1); print(board.state(1)); board.off(1)
+
+# Direct-RS485 tracker (Oriental Motor AZ/AZD) — same facade as the head-sensor Tracker
+trk = RS485Tracker(port="COM10", zenith_slave=1, azimuth_slave=2)
+trk.connect(); trk.home(); trk.move_to(zenith=30.0, azimuth=120.0)
+
+# Avantes spectrometer  (pip install "sciglob[spectrometer]")
+from sciglob.spectrometers import AvantesSpectrometer, get_session
+session = get_session(); session.init()
+spec = AvantesSpectrometer(serial="1234", session=session)
+spec.connect(); spec.set_integration_time(200); spectrum = spec.measure(10)
+
+# Camera  (pip install "sciglob[camera]")
+from sciglob.camera import Camera
+with Camera(backend="opencv") as cam:
+    frame = cam.capture()
+
+# xIMU3 head IMU  (pip install "sciglob[imu]")
+from sciglob.imu import IMU
+with IMU(port="COM13") as imu:
+    print(imu.get_readings())             # Roll/Pitch/Yaw/Temp/Battery
 ```
 
 ---

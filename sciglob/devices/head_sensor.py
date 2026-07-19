@@ -1,6 +1,8 @@
 """Head Sensor interface for SciGlob instruments."""
 
-from typing import TYPE_CHECKING, Any, Optional
+import threading
+import time
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from sciglob.core.base import BaseDevice
 
@@ -14,6 +16,7 @@ from sciglob.core.exceptions import (
     CommunicationError,
     ConnectionError,
     DeviceError,
+    RecoveryFailed,
     SensorError,
 )
 from sciglob.core.help_mixin import HelpMixin
@@ -23,6 +26,8 @@ from sciglob.core.protocols import (
     TIMING_CONFIG,
     DeviceType,
     SerialConfig,
+    get_error_message,
+    get_motor_alarm_message,
 )
 
 
@@ -104,6 +109,7 @@ class HeadSensor(BaseDevice, HelpMixin):
         home_position: Optional[list[float]] = None,
         config: Optional["HeadSensorConfig"] = None,
         serial_config: Optional[SerialConfig] = None,
+        connection: Optional[Any] = None,
     ):
         """
         Initialize the Head Sensor.
@@ -122,6 +128,10 @@ class HeadSensor(BaseDevice, HelpMixin):
             home_position: [zenith_home, azimuth_home] in degrees
             config: HeadSensorConfig object (overrides other parameters)
             serial_config: SerialConfig object for port settings
+            connection: Optional SerialConnection-compatible transport to inject
+                (e.g. sciglob.core.simulation.SimulatedTransport). When given,
+                :meth:`connect` uses it instead of opening a real serial port,
+                so tests and the Instrument facade run hardware-free.
         """
         # If config object provided, use its values
         if config is not None:
@@ -168,6 +178,21 @@ class HeadSensor(BaseDevice, HelpMixin):
         self._filter_wheel_1: Optional[FilterWheel] = None
         self._filter_wheel_2: Optional[FilterWheel] = None
         self._shadowband: Optional[Shadowband] = None
+
+        # Injected transport for hardware-free operation (simulation/tests).
+        self._injected_connection = connection
+
+        # Per-device reentrant lock guarding transport/shared-state operations
+        # (brief §3: thread safety is API contract). RLock so the recovery
+        # ladder can re-enter send_command while holding the lock.
+        self._lock = threading.RLock()
+
+        # Spectrometer power-cycle safety hook. Registered by an attached
+        # Spectrometer so it can mark its USB/AVS handle dead *before* the
+        # relay drops power (the v0.0.8.7 crash class: a stale handle used
+        # across a USB power drop segfaults the vendor driver). Default None
+        # (no-op). See :meth:`spec_power_cycle`.
+        self._spec_power_cycle_hook: Optional[Callable[[int], None]] = None
 
     @property
     def device_id(self) -> Optional[str]:
@@ -262,6 +287,21 @@ class HeadSensor(BaseDevice, HelpMixin):
         if self._connected:
             self.logger.warning("Already connected to head sensor")
             return
+
+        # Injected transport (simulation/tests): use it verbatim, skip scanning
+        # and skip opening a real serial port.
+        if self._injected_connection is not None:
+            try:
+                self._connection = self._injected_connection
+                if not self._connection.is_open:
+                    self._connection.open()
+                self._query_device_id()
+                self._connected = True
+                self.logger.info(f"Connected to {self._sensor_type} (injected transport)")
+                return
+            except Exception as e:
+                self.disconnect()
+                raise ConnectionError(f"Failed to connect to head sensor: {e}") from e
 
         if self.port is None:
             # Try to auto-detect port
@@ -723,6 +763,390 @@ class HeadSensor(BaseDevice, HelpMixin):
         response = self.send_command("S2s", timeout=10.0)
         return "S20" in response
 
+    # =========================================================================
+    # Spectrometer power-cycle safety hook (v0.0.8.7 crash-class mitigation)
+    # =========================================================================
+
+    def set_spec_power_cycle_hook(self, callback: Optional[Callable[[int], None]]) -> None:
+        """Register a callback fired *before* a spectrometer relay is cycled.
+
+        The head sensor multiplexes the spectrometer power relays (spec §4.7,
+        ``S1s``/``S2s``). Dropping USB power while an attached
+        :class:`Spectrometer` still holds a live AVS/USB handle segfaults the
+        vendor driver (field incident v0.0.8.7). The coordinator wires the
+        Spectrometer's "mark handle dead" routine here so it runs *first*, then
+        :meth:`spec_power_cycle` fires the relay.
+
+        Args:
+            callback: Callable invoked as ``callback(spec)`` with the 1-based
+                spectrometer number just before the ``S<n>s`` relay command is
+                written. Pass ``None`` to clear (restores the no-op default).
+        """
+        with self._lock:
+            self._spec_power_cycle_hook = callback
+
+    # Alias per the coordinator's naming convention.
+    def register_spec_power_hook(self, callback: Optional[Callable[[int], None]]) -> None:
+        """Alias for :meth:`set_spec_power_cycle_hook`."""
+        self.set_spec_power_cycle_hook(callback)
+
+    @property
+    def spec_power_cycle_hook(self) -> Optional[Callable[[int], None]]:
+        """The registered pre-power-cycle callback (``None`` if unset)."""
+        return self._spec_power_cycle_hook
+
+    @spec_power_cycle_hook.setter
+    def spec_power_cycle_hook(self, callback: Optional[Callable[[int], None]]) -> None:
+        with self._lock:
+            self._spec_power_cycle_hook = callback
+
+    def spec_power_cycle(self, spec: int) -> bool:
+        """Power-cycle a spectrometer relay (``S1s``/``S2s``), safely.
+
+        CRITICAL ordering: if a hook was registered via
+        :meth:`set_spec_power_cycle_hook`, it is invoked with ``spec`` **first**
+        (so an attached Spectrometer marks its handle dead before USB power
+        drops), and only then is the relay command written by delegating to
+        :meth:`spectrometer1_power_cycle` / :meth:`spectrometer2_power_cycle`.
+
+        Args:
+            spec: Spectrometer number, ``1`` or ``2``.
+
+        Returns:
+            True if the relay reported success (``S<n>0``).
+
+        Raises:
+            ValueError: If ``spec`` is not 1 or 2.
+        """
+        if spec not in (1, 2):
+            raise ValueError(f"spec must be 1 or 2, got {spec!r}")
+
+        with self._lock:
+            # Fire the safety hook BEFORE any relay byte is written. If the hook
+            # raises, the exception propagates and the relay is NOT cycled -
+            # failing loud is safer than dropping power on a live handle.
+            hook = self._spec_power_cycle_hook
+            if hook is not None:
+                self.logger.info(f"Invoking spectrometer {spec} power-cycle hook before relay")
+                hook(spec)
+
+            if spec == 1:
+                return self.spectrometer1_power_cycle()
+            return self.spectrometer2_power_cycle()
+
+    # =========================================================================
+    # Motor diagnostics (HSN2 + LuftBlickTR1; spec §4.5 / §4.6)
+    # =========================================================================
+
+    def _parse_alarm(self, response: str, prefix: str) -> tuple[int, str]:
+        """Decode an ``MZa?``/``MAa?`` answer into ``(code, message)``.
+
+        Two answer shapes exist (spec §4.5): ``Alarm Code = <N>\\n`` (LuftBlick
+        motor-driver alarm, table §6.2) or ``<prefix><code>\\n`` (a head-sensor
+        echo code, table §6.1 - e.g. ``MZ5`` = cannot read the tracker driver
+        register, the cabling-fault signature).
+        """
+        raw = response.strip()
+        if "=" in raw:
+            # "Alarm Code = N" -> split on " = " (spec §4.5 parsing).
+            try:
+                code = int(raw.split("=")[-1].strip())
+            except ValueError:
+                return 99, get_error_message(99)
+            return code, get_motor_alarm_message(code)
+        if raw.startswith(prefix):
+            tail = raw[len(prefix) :].strip()
+            try:
+                code = int(tail)
+            except ValueError:
+                return 99, get_error_message(99)
+            # Head-sensor echo code (table §6.1), not a LuftBlick alarm.
+            return code, get_error_message(code)
+        return 99, get_error_message(99)
+
+    def get_motor_alarms(self) -> dict[str, tuple[int, str]]:
+        """Query zenith and azimuth motor-driver alarms (spec §4.5).
+
+        Sends ``MZa?`` then ``MAa?`` (timeout ``fast_answer_timeout`` = 2 s).
+        Nonzero alarms are decoded but never raise here - per field doctrine
+        (``blick_serial.py:1040`` "In whatever case, ignore reading result")
+        the values are reported for the caller to log/act on.
+
+        Returns:
+            ``{'zenith': (code, message), 'azimuth': (code, message)}``.
+        """
+        timeout = TIMING_CONFIG["fast_answer_timeout"]
+        with self._lock:
+            zenith = self._parse_alarm(self.send_command("MZa?", timeout=timeout), "MZ")
+            azimuth = self._parse_alarm(self.send_command("MAa?", timeout=timeout), "MA")
+        return {"zenith": zenith, "azimuth": azimuth}
+
+    def _read_motor_scalar(self, command: str, prefix: str, factor: float) -> float:
+        """Read one ``<HW>!<int>\\n`` diagnostic, converting ``int / factor``.
+
+        On any error answer (``<prefix><code>``) the motor error sentinel
+        999. is returned (spec §4.6 error values), never an exception - these
+        reads are best-effort and must not trigger recovery.
+        """
+        response = self.send_command(command, timeout=TIMING_CONFIG["sensor_read_timeout"])
+        value = parse_sensor_value(response, prefix, factor)
+        if value is None:
+            return float(SENSOR_CONVERSIONS["motor_temp"]["error_value"])
+        return value
+
+    def get_motor_temperatures(self) -> dict[str, float]:
+        """Read the four motor/driver temperatures (spec §4.6).
+
+        Commands ``MZd?``/``MZm?``/``MAd?``/``MAm?`` return ``<HW>!<int>\\n``;
+        the value is ``int / 10.`` degrees C (timeout ``sensor_read_timeout``
+        = 4 s, raised from 2 s in the field because answers straggle). A failed
+        read yields the sentinel 999.
+
+        Returns:
+            ``{'zenith_driver', 'zenith_motor', 'azimuth_driver',
+            'azimuth_motor'}`` -> temperature in degrees C.
+        """
+        factor = float(SENSOR_CONVERSIONS["motor_temp"]["factor"])  # 10.
+        with self._lock:
+            return {
+                "zenith_driver": self._read_motor_scalar("MZd?", "MZ", factor),
+                "zenith_motor": self._read_motor_scalar("MZm?", "MZ", factor),
+                "azimuth_driver": self._read_motor_scalar("MAd?", "MA", factor),
+                "azimuth_motor": self._read_motor_scalar("MAm?", "MA", factor),
+            }
+
+    def get_motor_currents(self) -> dict[str, float]:
+        """Read zenith and azimuth motor currents.
+
+        Uses the spec §4.6 tracker-driver-register read grammar
+        (``<HW-prefix><read-cmd>?`` -> ``<HW>!<int>\\n``, value = ``int /
+        factor``). The field spec enumerates only the temperature read letters
+        (``d?`` driver, ``m?`` motor); the current-register read letter ``c?``
+        (``MZc?``/``MAc?``) follows the same grammar but is **inferred** and not
+        yet hardware-confirmed - it is decoded with the same ``/10.`` scale and
+        the same 999. error sentinel as the other driver-register reads. A
+        failed read yields the sentinel 999.
+
+        Returns:
+            ``{'zenith': current, 'azimuth': current}``.
+        """
+        factor = float(SENSOR_CONVERSIONS["motor_temp"]["factor"])  # /10. per §4.6 grammar
+        with self._lock:
+            return {
+                "zenith": self._read_motor_scalar("MZc?", "MZ", factor),
+                "azimuth": self._read_motor_scalar("MAc?", "MA", factor),
+            }
+
+    # =========================================================================
+    # Recovery ladder (mirrors the set_tracker escalation; spec §7 / §8)
+    # =========================================================================
+
+    def _sleep(self, seconds: float) -> None:
+        """Sleep through the transport's hook so simulated holds are scaled.
+
+        SimulatedTransport records the hold as a ``("sleep", seconds)``
+        line-event and scales the real delay by ``time_scale`` (0 = instant),
+        so time-bounded recovery steps stay testable.
+        """
+        sleep_fn = getattr(self._connection, "_sleep", time.sleep)
+        sleep_fn(seconds)
+
+    def _require_connection(self) -> Any:
+        """Return the live transport or raise if disconnected."""
+        if not self._connected or self._connection is None:
+            raise DeviceError("Not connected to head sensor")
+        return self._connection
+
+    def _recover_check_id(self, timeout: Optional[float] = None) -> bool:
+        """Recovery step: re-ask ``?`` and confirm the expected ID answers.
+
+        This is both the cheapest recovery step and the verification used after
+        every heavier step. Timeout defaults to ``fast_answer_timeout`` (2 s,
+        Blick recovery step 1 / ``maxwaits[1]``).
+
+        Returns:
+            True if a matching (or plausible SciGlob) ID answered.
+        """
+        if timeout is None:
+            timeout = TIMING_CONFIG["fast_answer_timeout"]
+        try:
+            answer = self.send_command("?", timeout=timeout).strip()
+        except Exception as exc:  # comm loss during recovery is expected
+            self.logger.debug(f"recover: check-id failed: {exc}")
+            return False
+        if not answer:
+            return False
+        expected = self._device_id or self._expected_sensor_type
+        if expected:
+            return expected in answer or answer in expected
+        return "SciGlob" in answer
+
+    def _recover_reset_pulse(self, hold: Optional[float] = None) -> bool:
+        """Recovery step: brief DTR reset pulse (~0.5 s).
+
+        Delegates to the transport's :meth:`reset_pulse` (default hold
+        ``esp32_reset_hold`` = 0.5 s). Available as an explicit, individually
+        testable last-resort line pulse.
+        """
+        conn = self._require_connection()
+        if hold is None:
+            hold = TIMING_CONFIG["esp32_reset_hold"]
+        conn.reset_pulse(hold=hold)
+        return True
+
+    def _recover_dtr_cycle(self, hold: Optional[float] = None) -> bool:
+        """Recovery step: full DTR power cycle (Blick step -1, spec §7).
+
+        Drops DTR, holds ``dtr_cycle_hold`` (3 s, field-verified -
+        ``maxwaits[13]``; the Pandora2.0 port's 1 s value is wrong per §11),
+        re-asserts, and settles the same 3 s, via the transport's
+        :meth:`dtr_cycle`.
+        """
+        conn = self._require_connection()
+        if hold is None:
+            hold = TIMING_CONFIG["dtr_cycle_hold"]
+        conn.dtr_cycle(hold=hold)
+        return True
+
+    def _recover_reopen_port(self, settle: Optional[float] = None) -> bool:
+        """Recovery step: close and reopen the port (Blick step -2, spec §7).
+
+        Waits ``port_reopen_settle`` (3 s, ``maxwaits[13]``) between close and
+        reopen, via the transport's :meth:`reopen`.
+        """
+        conn = self._require_connection()
+        if settle is None:
+            settle = TIMING_CONFIG["port_reopen_settle"]
+        conn.reopen(settle=settle)
+        return True
+
+    def _recover_peripheral_reset(self) -> bool:
+        """Recovery step: tracker soft reset ``TRr`` (spec §4.4 / §7 step -3..-5).
+
+        Timeout ``device_action_timeout`` (12 s, ``maxwaits[3]``). Success is
+        the head-sensor OK echo ``TR0``.
+        """
+        response = self.send_command("TRr", timeout=TIMING_CONFIG["device_action_timeout"])
+        return "TR0" in response
+
+    def _recover_power_reset(self) -> bool:
+        """Recovery step: tracker power-relay cycle ``TRs`` (spec §4.4 / §7 step 2).
+
+        Timeout ``device_action_timeout`` (12 s, ``maxwaits[3]`` - not the 30 s
+        the Pandora2.0 port claims; see §11). Success is ``TR0``.
+        """
+        response = self.send_command("TRs", timeout=TIMING_CONFIG["device_action_timeout"])
+        return "TR0" in response
+
+    def recover(
+        self,
+        *,
+        verify_timeout: Optional[float] = None,
+        include_reset_pulse: bool = True,
+        wait_retries: int = 1,
+    ) -> dict[str, Any]:
+        """Run the head-sensor recovery ladder, mirroring set_tracker escalation.
+
+        Escalation order (each heavier step is followed by a ``?`` re-check;
+        the ladder stops the moment communication is restored):
+
+        1. re-ask ID (``?``, 2 s)
+        2. brief DTR reset pulse (~0.5 s) - only if ``include_reset_pulse``
+        3. full DTR power cycle (3 s hold, Blick step -1)
+        4. close / reopen port (3 s settle, Blick step -2)
+        5. peripheral reset (``TRr``, 12 s)
+        6. tracker power reset (``TRs``, 12 s)
+        7. wait ``wait_level_delay`` (60 s) and re-check, up to ``wait_retries``
+           times (Blick level 4/13/18)
+
+        All sleeps are the field-verified values from ``TIMING_CONFIG``
+        (``dtr_cycle_hold`` 3 s, ``port_reopen_settle`` 3 s, ``wait_level_delay``
+        60 s) and flow through the transport's sleep hook so simulated runs are
+        instantaneous yet recorded.
+
+        Args:
+            verify_timeout: Timeout for the ``?`` verification (default 2 s).
+            include_reset_pulse: Include the brief DTR reset-pulse step.
+            wait_retries: Number of 60 s wait-and-recheck attempts at the end.
+
+        Returns:
+            A structured result dict::
+
+                {"recovered": bool, "final_step": Optional[str],
+                 "device": str, "steps": [{"step", "action_ok", "verified",
+                 "error"}, ...]}
+
+        Raises:
+            RecoveryFailed: Only when the entire ladder is exhausted without
+                restoring communication.
+        """
+        with self._lock:
+            self._require_connection()
+            result: dict[str, Any] = {
+                "recovered": False,
+                "final_step": None,
+                "device": self.name,
+                "steps": [],
+            }
+
+            def run_step(name: str, action: Callable[[], bool], verify: bool = True) -> bool:
+                record: dict[str, Any] = {
+                    "step": name,
+                    "action_ok": False,
+                    "verified": False,
+                    "error": None,
+                }
+                try:
+                    record["action_ok"] = bool(action())
+                    if verify:
+                        record["verified"] = self._recover_check_id(timeout=verify_timeout)
+                    else:
+                        record["verified"] = bool(record["action_ok"])
+                except Exception as exc:
+                    record["error"] = str(exc)
+                    self.logger.warning(f"recover: step '{name}' raised: {exc}")
+                result["steps"].append(record)
+                if record["verified"]:
+                    result["recovered"] = True
+                    result["final_step"] = name
+                return bool(record["verified"])
+
+            self.logger.info("Starting head-sensor recovery ladder")
+
+            # Step 1: cheapest - is it already answering?
+            if run_step("check_id", lambda: True, verify=True):
+                return result
+            # Step 2: brief DTR reset pulse (~0.5 s).
+            if include_reset_pulse and run_step("reset_pulse", self._recover_reset_pulse):
+                return result
+            # Step 3: full DTR power cycle (3 s hold).
+            if run_step("dtr_cycle", self._recover_dtr_cycle):
+                return result
+            # Step 4: close / reopen the port (3 s settle).
+            if run_step("reopen_port", self._recover_reopen_port):
+                return result
+            # Step 5: peripheral (tracker) reset.
+            if run_step("peripheral_reset", self._recover_peripheral_reset):
+                return result
+            # Step 6: tracker power-relay cycle.
+            if run_step("power_reset", self._recover_power_reset):
+                return result
+            # Step 7: wait 60 s and re-check, up to wait_retries times.
+            def _wait_action() -> bool:
+                self._sleep(TIMING_CONFIG["wait_level_delay"])
+                return True
+
+            for _ in range(max(0, wait_retries)):
+                if run_step("wait_and_retry", _wait_action):
+                    return result
+
+            raise RecoveryFailed(
+                f"Head-sensor recovery ladder exhausted after "
+                f"{len(result['steps'])} steps without restoring communication",
+                recovery_level=len(result["steps"]),
+                device=self.name,
+            )
+
     def get_status(self) -> dict[str, Any]:
         """
         Get comprehensive status of the Head Sensor.
@@ -742,3 +1166,126 @@ class HeadSensor(BaseDevice, HelpMixin):
             status["sensors"] = self.get_all_sensors()
 
         return status
+
+
+# Realistic canned answers for a SciGlobHSN2 + LuftBlickTR1 head sensor,
+# used by the simulation twin. Values mirror the wire grammar in the spec:
+# echo codes "<prefix>0" for OK, "<HW>!<int>" for scaled readings.
+_SIMULATED_HEAD_SENSOR_ANSWERS: dict[str, str] = {
+    "?": "SciGlobHSN2\n",
+    "S1s": "S10\n",  # spectrometer 1 relay OK (§4.7)
+    "S2s": "S20\n",  # spectrometer 2 relay OK (§4.7)
+    "TRr": "TR0\n",  # tracker soft reset OK (§4.4)
+    "TRs": "TR0\n",  # tracker power-relay cycle OK (§4.4)
+    "MZa?": "Alarm Code = 0\n",  # zenith alarm: none (§4.5 / §6.2)
+    "MAa?": "Alarm Code = 0\n",  # azimuth alarm: none
+    "MZd?": "MZ!235\n",  # zenith driver temp 23.5 C (§4.6, /10)
+    "MZm?": "MZ!247\n",  # zenith motor temp 24.7 C
+    "MAd?": "MA!212\n",  # azimuth driver temp 21.2 C
+    "MAm?": "MA!229\n",  # azimuth motor temp 22.9 C
+    "MZc?": "MZ!158\n",  # zenith motor current (inferred grammar, /10)
+    "MAc?": "MA!163\n",  # azimuth motor current
+    "HTt?": "HT!2500\n",  # head temp 25.00 C (§4.6, /100)
+    "HTh?": "HT!51200\n",  # head humidity 50.0 (/1024)
+    "HTp?": "HT!101325\n",  # head pressure 1013.25 hPa (/100)
+}
+
+
+def SimulatedHeadSensor(
+    sensor_type: str = "SciGlobHSN2",
+    *,
+    tracker_type: str = "LuftBlickTR1",
+    answers: Optional[dict[str, str]] = None,
+    port: str = "SIM_HST",
+    connect: bool = True,
+    **kwargs: Any,
+) -> HeadSensor:
+    """Build a hardware-free :class:`HeadSensor` over a SimulatedTransport.
+
+    Wires a :class:`~sciglob.core.simulation.SimulatedTransport` with realistic
+    canned answers (:data:`_SIMULATED_HEAD_SENSOR_ANSWERS`) into a real
+    ``HeadSensor`` so the full QA/recovery code paths run byte-for-byte without
+    a serial port.
+
+    Args:
+        sensor_type: Expected sensor type used for the ``?`` answer/validation.
+        tracker_type: Tracker type reported by the head sensor.
+        answers: Optional command->answer overrides merged over the defaults.
+        port: Simulated port name.
+        connect: If True, open the transport and connect before returning.
+        **kwargs: Forwarded to the :class:`HeadSensor` constructor.
+
+    Returns:
+        A ``HeadSensor`` bound to the simulated transport.
+    """
+    from sciglob.core.simulation import SimulatedTransport
+
+    mapping: dict[str, Any] = dict(_SIMULATED_HEAD_SENSOR_ANSWERS)
+    mapping["?"] = f"{sensor_type}\n"
+    if answers:
+        mapping.update(answers)
+
+    # Stateful responder: fixed answers first, then the variable-argument
+    # command families (moves, filter wheels, shadowband) with position
+    # readback for TRw/TRm. Field wire order is azimuth-first (az,ze).
+    state = {"az": 0, "ze": 0}
+
+    def responder(data: bytes) -> str:
+        text = data.decode("latin-1", errors="ignore")
+        cmd = text[:-1] if text.endswith("\r") else text
+        if cmd in mapping:
+            answer = mapping[cmd]
+            return str(answer() if callable(answer) else answer)
+        if cmd.startswith("TRb"):
+            try:
+                az, ze = cmd[3:].split(",")
+                state["az"], state["ze"] = int(az), int(ze)
+            except (ValueError, IndexError):
+                pass
+            return "TR0\n"
+        if cmd.startswith("TRp"):
+            try:
+                state["az"] = int(cmd[3:])
+            except ValueError:
+                pass
+            return "TR0\n"
+        if cmd.startswith("TRt"):
+            try:
+                state["ze"] = int(cmd[3:])
+            except ValueError:
+                pass
+            return "TR0\n"
+        if cmd in ("TRw", "TRm"):
+            return f"TRh{state['az']},{state['ze']}\n"
+        if cmd.startswith("F1"):
+            return "F10\n"
+        if cmd.startswith("F2"):
+            return "F20\n"
+        if cmd.startswith("SB"):
+            return "SB0\n"
+        if cmd.startswith("MB"):
+            return "MB0\n"
+        if cmd.startswith("MA"):
+            return "MA0\n"
+        if cmd.startswith("MZ"):
+            return "MZ0\n"
+        if cmd.startswith("TR"):
+            return "TR0\n"
+        if cmd.startswith("HT"):
+            return "HT0\n"
+        return "\n"
+
+    transport = SimulatedTransport(
+        responder=responder,
+        port=port,
+        owner="SimulatedHeadSensor",
+    )
+    hs = HeadSensor(
+        sensor_type=sensor_type,
+        tracker_type=tracker_type,
+        connection=transport,
+        **kwargs,
+    )
+    if connect:
+        hs.connect()
+    return hs

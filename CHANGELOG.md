@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-18
+
+Full Pandora-class hardware coverage. Every subsystem of a SciGlob / Pandora
+instrument is now drivable through `sciglob` with a real driver **and** a
+simulation twin, behind one `Instrument` facade. The 0.1.6 public API is
+unchanged. Wire constants were distilled from the field-proven NewBlick/Blick
+and Pandora2.0 codebases and verified against source.
+
+### Added — new devices
+- **SBHS** (`sciglob.devices.SBHS`) — ESP32 JSON Spec-Box Humidity Sensor.
+- **ASB** (`sciglob.devices.ASB`) — ESP32 Air Sensors Box (dual BME280 + MPRLS
+  ambient pressure).
+- **SRB** (`sciglob.devices.SRB`) — SciGlobSRB1 sensors-reading board.
+- **TETech1090** support in `TemperatureController` — `#`-framed protocol at
+  19200 baud with CRC-16/XMODEM and IEEE-754 float32 values (TETech1/TETech2
+  behavior unchanged).
+- **RelayBoard** (`sciglob.devices.RelayBoard`) — Samirob 4-channel binary relay
+  board.
+- **RS485Tracker** (`sciglob.devices.RS485Tracker`) — direct-RS485 Oriental
+  Motor AZ/AZD tracker (Modbus RTU), exposing the same `move_to`/`home`/
+  `get_position`/`check_alarms` facade as the head-sensor `Tracker` so tracking
+  backends are swappable via config.
+- **Avantes spectrometer** (`sciglob.spectrometers`) — ctypes-over-`avaspecx64.dll`
+  driver with a process-global session manager, the full recovery doctrine
+  (Tier A device-drop / Tier B session-restart), dead-handle guards, and a
+  `SimulatedSpectrometer` twin. Optional extra `[spectrometer]`.
+- **Camera** (`sciglob.camera`) — OpenCV / simulated backends; accepts the first
+  device that delivers a frame and stores the effective resolution. Extra
+  `[camera]`.
+- **IMU** (`sciglob.imu`) — xIMU3 push-based head IMU with per-message-type
+  counters (the "connected but silent" diagnostic). Extra `[imu]`.
+
+### Added — facade & core
+- **`Instrument`** facade — `from_yaml` / `from_iof` / `from_dict` / programmatic
+  construction; opens a full instrument, degrades gracefully (`strict` flag),
+  reports a per-device `status()` map, and wires the relay↔spectrometer
+  power-cycle coupling.
+- **`Instrument.from_iof`** + `sciglob.config.config_from_iof` — build an
+  instrument config from a Pandora Instrument Operation File.
+- ESP32-safe serial profile, process-wide `PortRegistry` collision guard, a
+  field-faithful `ask()` QA cycle (drain → poll → grace retries →
+  unexpected-answer escalation), and binary-frame helpers (`write_frame`,
+  `read_exact`) in `sciglob.core.connection`.
+- `sciglob.core.simulation` — `SimulatedTransport` / `make_responder` shared
+  simulation machinery (simulated devices run the real QA code paths).
+- New exceptions: `PortCollisionError`, `DeviceIdentityError`, `RecoveryFailed`,
+  `SessionRestartRequired`, `RelayBoardError`, `ImuError` (plus the existing
+  `SpectrometerError`, `CameraError`).
+- New optional extras: `[spectrometer]`, `[imu]`, `[camera]`, `[hardware]`.
+
+### Added — head sensor hardening
+- `HeadSensor.spec_power_cycle(1|2)` with a `set_spec_power_cycle_hook` that
+  marks an attached spectrometer power-cycled **before** the USB relay fires
+  (prevents the freed-handle access-violation crash class).
+- `get_motor_alarms()`, `get_motor_temperatures()`, `get_motor_currents()`, and a
+  documented `recover()` recovery ladder (re-ask ID → DTR pulse → reopen port →
+  peripheral reset → power reset) with field-verified timings.
+
+### Documentation
+- New `docs/RELIABILITY.md` capturing the ESP32 and Avantes reliability doctrine
+  (the *why* behind the field fixes).
+- README device table, per-device quick-starts, and facade guide;
+  `SCIGLOB_COMMAND_REFERENCE.md` wire tables for the new subsystems.
+- New examples: `examples/full_instrument.py`, `examples/spectrometer_measurement.py`.
+
+### Fixed
+- **TETech1/2 temperature readback**: GET responses are now parsed with the
+  leading `*` frame character stripped before hex decoding. Real devices frame
+  answers as `*<hex><checksum>^`; the previous parser left the `*` in place and
+  raised `ValueError` on every real GET. Also raised the TC serial timeout to
+  the 12 s device-action window so slow float32 answers are not dropped.
+- **RS485 tracker** (new in 0.2.0): added half-duplex TX-echo handling
+  (`echo=` option), correct Modbus exception-frame decoding, a pre-move STOP
+  pulse, and motion/home completion gating that waits for motion to actually
+  start before reporting "settled".
+
+### Tests
+- 250+ new tests, all hardware-free via simulated transports, including the
+  field-incident regressions (`test_sbhs_identify_without_configured_id`,
+  `test_esp32_open_never_pulses_reset`, `test_reset_pulse_line_sequence`,
+  `test_last_complete_json_record_parsing`, `test_port_collision_refused`,
+  `test_avantes_dead_handle_guards`, `test_tier_a_never_calls_done`,
+  `test_tier_b_sentinel_escalation`, `test_rapid_refail_gated_on_no_data`,
+  `test_camera_accepts_first_working_frame_any_resolution`,
+  `test_imu_counts_messages_per_type`).
+
 ## [0.1.6] - 2026-06-18
 
 ### Fixed

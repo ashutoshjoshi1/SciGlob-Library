@@ -270,7 +270,7 @@ def test_simulated_camera_generates_sun_spot():
     cx, cy = cam.last_true_center
     # Center pixel should be lit; a far corner should be background.
     img = frame.image
-    if hasattr(img, "data"):  # SimpleFrame stand-in
+    if isinstance(img, SimpleFrame):  # SimpleFrame stand-in
         assert img.data[int(cy)][int(cx)] == 200
         assert img.data[0][0] == 0
     else:  # numpy path
